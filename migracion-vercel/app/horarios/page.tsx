@@ -1,8 +1,16 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  adaptExtractedHorario,
+  extractDocenteNameFromText,
+  extractPdfMetadata,
+  extractPrimaryProfesorFromText,
+  extractTextFromPdf,
+  type HorarioPayload,
+} from "@/lib/horario-extractor";
 
 type HorarioRecord = {
   id_horario: number;
@@ -33,31 +41,115 @@ const emptyForm: FormState = {
   hora_fin: "10:00",
 };
 
+const normalizeText = (value: string | null | undefined) =>
+  (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
 const fallbackHorarios: HorarioRecord[] = [
   { id_horario: 1, id_usuario: 2, id_aula: 1, dia_semana: "Lunes", hora_inicio: "08:00", hora_fin: "10:00", usuarios: { nombre: "Profesor", apellido: "Demo" }, aulas: { nombre_aula: "Aula 101", codigo_aula: "A-101" } },
   { id_horario: 2, id_usuario: 2, id_aula: 2, dia_semana: "Miércoles", hora_inicio: "12:00", hora_fin: "14:00", usuarios: { nombre: "Profesor", apellido: "Demo" }, aulas: { nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" } },
+  { id_horario: 3, id_usuario: 3, id_aula: 3, dia_semana: "Viernes", hora_inicio: "07:00", hora_fin: "09:00", usuarios: { nombre: "Ana", apellido: "Gómez" }, aulas: { nombre_aula: "Salón de grados", codigo_aula: "SAL-3" } },
 ];
+
+const getLocalStorageJson = <T,>(key: string) => {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? "null") as T | null;
+  } catch {
+    return null;
+  }
+};
+
+const saveHorariosToLocal = (records: HorarioRecord[]) => {
+  localStorage.setItem("demo-horarios", JSON.stringify(records));
+};
+
+const saveSingleHorario = async (payload: { id_usuario: number; id_aula: number; dia_semana: string; hora_inicio: string; hora_fin: string }) => {
+  if (!supabase) {
+    const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+    const actualUsuarios = getLocalStorageJson<Array<Record<string, any>>>("demo-usuarios") ?? [];
+    const actualAulas = getLocalStorageJson<Array<Record<string, any>>>("demo-aulas") ?? [];
+    const display = resolveHorarioDisplay(payload.id_usuario, payload.id_aula, actualUsuarios, actualAulas);
+
+    const next: HorarioRecord = {
+      id_horario: Date.now(),
+      id_usuario: payload.id_usuario,
+      id_aula: payload.id_aula,
+      dia_semana: payload.dia_semana,
+      hora_inicio: payload.hora_inicio,
+      hora_fin: payload.hora_fin,
+      usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido },
+      aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula },
+    };
+    const updated = [next, ...current];
+    saveHorariosToLocal(updated);
+    return updated;
+  }
+
+  const { error } = await supabase.from("horarios_docentes").insert({
+    id_usuario: payload.id_usuario,
+    id_aula: payload.id_aula,
+    dia_semana: payload.dia_semana,
+    hora_inicio: payload.hora_inicio,
+    hora_fin: payload.hora_fin,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return null;
+};
+
+const getProfessorLabel = (usuario?: Record<string, any> | null) => {
+  if (!usuario) return "Sin profesor";
+  return `${usuario.nombre ?? ""} ${usuario.apellido ?? ""}`.trim() || usuario.email || "Profesor";
+};
+
+const matchPersonaNombre = (input: string, candidate: string) =>
+  normalizeText(input) === normalizeText(candidate) || normalizeText(input).includes(normalizeText(candidate)) || normalizeText(candidate).includes(normalizeText(input));
+
+const buildEmailFromNombre = (nombreCompleto: string) => {
+  const compact = normalizeText(nombreCompleto).replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "");
+  return compact ? `${compact}@institucion.edu` : "docente@institucion.edu";
+};
+
+const resolveHorarioDisplay = (idUsuario: number | null, idAula: number | null, currentUsuarios: Array<Record<string, any>>, currentAulas: Array<Record<string, any>>) => {
+  const profesor = currentUsuarios.find((usuario) => Number(usuario.id_usuario) === Number(idUsuario));
+  const aula = currentAulas.find((room) => Number(room.id_aula) === Number(idAula));
+
+  return {
+    usuario: profesor ?? { nombre: "Docente", apellido: "Sistema" },
+    aula: aula ?? { nombre_aula: "Aula asignada", codigo_aula: "SISTEMA" },
+  };
+};
 
 export default function HorariosPage() {
   const [horarios, setHorarios] = useState<HorarioRecord[]>([]);
   const [usuarios, setUsuarios] = useState<Array<Record<string, any>>>([]);
   const [aulas, setAulas] = useState<Array<Record<string, any>>>([]);
   const [search, setSearch] = useState("");
+  const [selectedProfessorId, setSelectedProfessorId] = useState<string>("");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const normalizeText = (value: string | null | undefined) =>
-    (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfText, setPdfText] = useState("");
+  const [parsedHorarios, setParsedHorarios] = useState<HorarioPayload[]>([]);
 
   const loadData = async () => {
-    const savedHorarios = JSON.parse(localStorage.getItem("demo-horarios") ?? "null") as HorarioRecord[] | null;
-    const savedUsuarios = JSON.parse(localStorage.getItem("demo-usuarios") ?? "null") as Array<Record<string, any>> | null;
-    const savedAulas = JSON.parse(localStorage.getItem("demo-aulas") ?? "null") as Array<Record<string, any>> | null;
+    const savedHorarios = getLocalStorageJson<HorarioRecord[]>("demo-horarios");
+    const savedUsuarios = getLocalStorageJson<Array<Record<string, any>>>("demo-usuarios");
+    const savedAulas = getLocalStorageJson<Array<Record<string, any>>>("demo-aulas");
 
     if (!supabase) {
-      const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [{ id_usuario: 2, nombre: "Profesor", apellido: "Demo" }];
-      const finalAulas = savedAulas?.length ? savedAulas : [{ id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" }, { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" }];
+      const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [
+        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
+      ];
+      const finalAulas = savedAulas?.length ? savedAulas : [
+        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
+        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
+        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
+      ];
       const finalHorarios = savedHorarios?.length ? savedHorarios : fallbackHorarios;
       localStorage.setItem("demo-usuarios", JSON.stringify(finalUsuarios));
       localStorage.setItem("demo-aulas", JSON.stringify(finalAulas));
@@ -65,22 +157,30 @@ export default function HorariosPage() {
       setUsuarios(finalUsuarios);
       setAulas(finalAulas);
       setHorarios(finalHorarios);
+      setSelectedProfessorId("");
       return;
     }
 
     try {
       const [usuariosResult, aulasResult, horariosResult] = await Promise.all([
-        supabase.from("usuarios").select("*"),
-        supabase.from("aulas").select("*"),
-        supabase.from("horarios_docentes").select("*, usuarios(nombre, apellido), aulas(nombre_aula, codigo_aula)").order("dia_semana", { ascending: true }),
+        supabase.from("usuarios").select("*").order("nombre", { ascending: true }),
+        supabase.from("aulas").select("*").order("nombre_aula", { ascending: true }),
+        supabase.from("horarios_docentes").select("*, usuarios(nombre, apellido, email), aulas(nombre_aula, codigo_aula)").order("dia_semana", { ascending: true }),
       ]);
 
       if (usuariosResult.error || aulasResult.error || horariosResult.error) {
         throw usuariosResult.error ?? aulasResult.error ?? horariosResult.error ?? new Error("Sin datos disponibles");
       }
 
-      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [{ id_usuario: 2, nombre: "Profesor", apellido: "Demo" }];
-      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [{ id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" }, { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" }];
+      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [
+        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
+      ];
+      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [
+        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
+        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
+        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
+      ];
       const nextHorarios = (horariosResult.data as HorarioRecord[] | null)?.length ? (horariosResult.data as HorarioRecord[]) : fallbackHorarios;
 
       localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
@@ -89,9 +189,17 @@ export default function HorariosPage() {
       setUsuarios(nextUsuarios);
       setAulas(nextAulas);
       setHorarios(nextHorarios);
+      setSelectedProfessorId("");
     } catch (error) {
-      const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [{ id_usuario: 2, nombre: "Profesor", apellido: "Demo" }];
-      const fallbackAulasData = savedAulas?.length ? savedAulas : [{ id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" }, { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" }];
+      const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [
+        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
+      ];
+      const fallbackAulasData = savedAulas?.length ? savedAulas : [
+        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
+        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
+        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
+      ];
       const fallbackData = savedHorarios?.length ? savedHorarios : fallbackHorarios;
       localStorage.setItem("demo-usuarios", JSON.stringify(fallbackUsuariosData));
       localStorage.setItem("demo-aulas", JSON.stringify(fallbackAulasData));
@@ -99,6 +207,7 @@ export default function HorariosPage() {
       setUsuarios(fallbackUsuariosData);
       setAulas(fallbackAulasData);
       setHorarios(fallbackData);
+      setSelectedProfessorId("");
       console.warn("Fallo en Supabase para horarios, usando datos demo.", error);
     }
   };
@@ -123,29 +232,206 @@ export default function HorariosPage() {
     });
   }, [horarios, search]);
 
+  const teacherSchedule = useMemo(() => {
+    if (!selectedProfessorId) return [];
+    return horarios.filter((horario) => Number(horario.id_usuario) === Number(selectedProfessorId));
+  }, [horarios, selectedProfessorId]);
+
+  const hydrateFormFromExtracted = (items: HorarioPayload[]) => {
+    if (!items.length) return;
+    const first = items[0];
+    setForm({
+      id_horario: null,
+      id_usuario: String(first.id_usuario),
+      id_aula: String(first.id_aula),
+      dia_semana: first.dia_semana,
+      hora_inicio: first.hora_inicio,
+      hora_fin: first.hora_fin,
+    });
+    setSelectedProfessorId(String(first.id_usuario));
+  };
+
+  const ensureProfessorFromPdf = async (nombreCompleto: string, metadata?: ReturnType<typeof extractPdfMetadata>) => {
+    if (!nombreCompleto.trim()) {
+      return { usuario: usuarios[0] ?? null, created: false, message: "" };
+    }
+
+    const normalizedNombre = nombreCompleto.trim();
+    const nombreParts = normalizedNombre.split(/\s+/);
+    const nombre = nombreParts[0] ?? "Docente";
+    const apellido = nombreParts.slice(1).join(" ") || "PDF";
+    const email = metadata?.email || buildEmailFromNombre(normalizedNombre);
+
+    const existing = usuarios.find((usuario) => {
+      const nombreUsuario = `${usuario.nombre ?? ""} ${usuario.apellido ?? ""}`.trim();
+      const sameName = matchPersonaNombre(normalizedNombre, nombreUsuario);
+      const sameEmail = metadata?.email ? normalizeText(usuario.email ?? "") === normalizeText(metadata.email) : false;
+      return sameName || sameEmail || matchPersonaNombre(normalizedNombre, usuario.email ?? "");
+    });
+
+    if (existing) {
+      if (metadata?.email && existing.email !== metadata.email) {
+        const mergedUsuario = {
+          ...existing,
+          email: metadata.email,
+          nombre: existing.nombre || nombre,
+          apellido: existing.apellido || apellido,
+        };
+
+        const updatedUsuarios = usuarios.map((usuario) =>
+          Number(usuario.id_usuario) === Number(existing.id_usuario) ? mergedUsuario : usuario
+        );
+
+        setUsuarios(updatedUsuarios);
+        localStorage.setItem("demo-usuarios", JSON.stringify(updatedUsuarios));
+
+        if (supabase) {
+          await supabase.from("usuarios").update({
+            nombre: mergedUsuario.nombre,
+            apellido: mergedUsuario.apellido,
+            email: mergedUsuario.email,
+          }).eq("id_usuario", existing.id_usuario);
+          await loadData();
+        }
+      }
+
+      return { usuario: existing, created: false, message: `Se actualizó el docente ${getProfessorLabel(existing)} con los datos del PDF.` };
+    }
+
+    const createdUser = {
+      id_usuario: Date.now(),
+      nombre,
+      apellido,
+      email,
+      password: "123456",
+      id_rol: 2,
+      estado: "Activo",
+      roles: { nombre_rol: "Profesor" },
+    };
+
+    const nextUsuarios = [createdUser, ...usuarios];
+    setUsuarios(nextUsuarios);
+    localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
+
+    if (supabase) {
+      const { error } = await supabase.from("usuarios").insert({
+        nombre,
+        apellido,
+        email,
+        password: "123456",
+        id_rol: 2,
+        estado: "Activo",
+      });
+      if (error) {
+        console.warn("No se pudo guardar el docente nuevo en Supabase:", error);
+      } else {
+        await loadData();
+      }
+    }
+
+    return { usuario: createdUser, created: true, message: `Se creó automáticamente el docente ${nombre} ${apellido}.` };
+  };
+
+  const ensureAulaFromPdf = async (nombreAula: string) => {
+    if (!nombreAula.trim()) {
+      return { aula: aulas[0] ?? null, created: false, message: "" };
+    }
+
+    const existing = aulas.find((aula) => {
+      const haystack = `${aula.codigo_aula ?? ""} ${aula.nombre_aula ?? ""}`;
+      return matchPersonaNombre(nombreAula, haystack) || matchPersonaNombre(nombreAula, aula.codigo_aula ?? "");
+    });
+
+    if (existing) {
+      return { aula: existing, created: false, message: `Se encontró el aula ${existing.nombre_aula}.` };
+    }
+
+    const normalizedNombre = nombreAula.trim();
+    const codigo = normalizedNombre.match(/[A-Z0-9-]+/i)?.[0]?.toUpperCase() || `A-${Date.now().toString().slice(-4)}`;
+    const createdAula = {
+      id_aula: Date.now(),
+      codigo_aula: codigo,
+      nombre_aula: normalizedNombre,
+      capacidad: 30,
+      equipamiento: "Proyector",
+      estado: "Activo",
+    };
+
+    const nextAulas = [createdAula, ...aulas];
+    setAulas(nextAulas);
+    localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
+
+    if (supabase) {
+      const { error } = await supabase.from("aulas").insert({
+        codigo_aula: codigo,
+        nombre_aula: normalizedNombre,
+        capacidad: 30,
+        equipamiento: "Proyector",
+        estado: "Activo",
+      });
+      if (error) {
+        console.warn("No se pudo guardar el aula nueva en Supabase:", error);
+      } else {
+        await loadData();
+      }
+    }
+
+    return { aula: createdAula, created: true, message: `Se creó automáticamente el aula ${normalizedNombre}.` };
+  };
+
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const hasDuplicateHorario = (
+    payload: { id_usuario: number; id_aula: number; dia_semana: string; hora_inicio: string; hora_fin: string },
+    ignoreHorarioId?: number | null
+  ) => {
+    const exactMatch = horarios.some((horario) => {
+      if (ignoreHorarioId && Number(horario.id_horario) === Number(ignoreHorarioId)) {
+        return false;
+      }
+      return Number(horario.id_usuario) === Number(payload.id_usuario) &&
+        Number(horario.id_aula) === Number(payload.id_aula) &&
+        horario.dia_semana === payload.dia_semana &&
+        horario.hora_inicio === payload.hora_inicio &&
+        horario.hora_fin === payload.hora_fin;
+    });
+
+    return exactMatch;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
 
+    const resolvedIdUsuario = Number(form.id_usuario) || Number(usuarios[0]?.id_usuario ?? 0);
+    const resolvedIdAula = Number(form.id_aula) || Number(aulas[0]?.id_aula ?? 0);
+
     const payload = {
-      id_usuario: Number(form.id_usuario),
-      id_aula: Number(form.id_aula),
+      id_usuario: resolvedIdUsuario,
+      id_aula: resolvedIdAula,
       dia_semana: form.dia_semana,
       hora_inicio: form.hora_inicio,
       hora_fin: form.hora_fin,
     };
 
     try {
+      if (!payload.id_usuario || !payload.id_aula) {
+        throw new Error("No hay profesores o aulas disponibles para registrar el horario.");
+      }
+
+      if (hasDuplicateHorario(payload, form.id_horario ?? null)) {
+        throw new Error("Ya existe ese horario para ese docente y aula en ese día y horario.");
+      }
+
       if (!supabase) {
-        const current = JSON.parse(localStorage.getItem("demo-horarios") ?? "[]") as HorarioRecord[];
+        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const display = resolveHorarioDisplay(payload.id_usuario, payload.id_aula, usuarios, aulas);
         const updated = form.id_horario
-          ? current.map((item) => (item.id_horario === form.id_horario ? { ...item, ...payload, id_horario: item.id_horario } : item))
-          : [{ ...payload, id_horario: Date.now(), usuarios: { nombre: "Docente", apellido: "Nuevo" }, aulas: { nombre_aula: "Aula", codigo_aula: "N/A" } }, ...current];
-        localStorage.setItem("demo-horarios", JSON.stringify(updated));
+          ? current.map((item) => (item.id_horario === form.id_horario ? { ...item, ...payload, id_horario: item.id_horario, usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido }, aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula } } : item))
+          : [{ ...payload, id_horario: Date.now(), usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido }, aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula } }, ...current];
+        saveHorariosToLocal(updated);
         setHorarios(updated);
       } else {
         if (form.id_horario) {
@@ -159,9 +445,10 @@ export default function HorariosPage() {
       }
 
       setMessage(form.id_horario ? "Horario actualizado correctamente." : "Horario registrado correctamente.");
+      setSelectedProfessorId(String(payload.id_usuario));
       setForm(emptyForm);
     } catch (error) {
-      setMessage("No se pudo guardar el horario.");
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el horario.");
       console.error(error);
     } finally {
       setSaving(false);
@@ -177,7 +464,155 @@ export default function HorariosPage() {
       hora_inicio: horario.hora_inicio,
       hora_fin: horario.hora_fin,
     });
+    setSelectedProfessorId(String(horario.id_usuario));
     setMessage("Editando horario seleccionado.");
+  };
+
+  const handleDelete = async (id_horario: number) => {
+    if (!id_horario) return;
+    const confirmed = window.confirm("¿Seguro que quieres eliminar este horario?");
+    if (!confirmed) return;
+
+    try {
+      if (!supabase) {
+        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const updated = current.filter((item) => item.id_horario !== id_horario);
+        saveHorariosToLocal(updated);
+        setHorarios(updated);
+      } else {
+        const { error } = await supabase.from("horarios_docentes").delete().eq("id_horario", id_horario);
+        if (error) throw error;
+        await loadData();
+      }
+      setMessage("Horario eliminado correctamente.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el horario.");
+      console.error(error);
+    }
+  };
+
+  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setPdfBusy(true);
+    setMessage("");
+    try {
+      const text = await extractTextFromPdf(file);
+      setPdfText(text);
+
+      const mappedUsuarios = usuarios.map((usuario) => ({
+        id_usuario: Number(usuario.id_usuario),
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        email: usuario.email,
+      }));
+      const mappedAulas = aulas.map((aula) => ({
+        id_aula: Number(aula.id_aula),
+        codigo_aula: aula.codigo_aula,
+        nombre_aula: aula.nombre_aula,
+      }));
+
+      const pdfMetadata = extractPdfMetadata(text);
+      const docenteNombre = extractDocenteNameFromText(text);
+      const docentePrincipal = extractPrimaryProfesorFromText(text, mappedUsuarios) ?? mappedUsuarios[0];
+      const docenteResolved = docenteNombre ? await ensureProfessorFromPdf(docenteNombre, pdfMetadata) : { usuario: docentePrincipal ?? usuarios[0] ?? null, created: false, message: "" };
+
+      const extracted = adaptExtractedHorario(text, mappedUsuarios, mappedAulas);
+
+      const resolvedProfessorId = docenteResolved.usuario?.id_usuario ?? extracted[0]?.id_usuario ?? Number(usuarios[0]?.id_usuario ?? 0);
+      const resolvedAulaId = extracted[0]?.id_aula ?? Number(aulas[0]?.id_aula ?? 0);
+
+      setParsedHorarios(extracted);
+      setForm({
+        id_horario: null,
+        id_usuario: String(resolvedProfessorId || ""),
+        id_aula: String(resolvedAulaId || ""),
+        dia_semana: extracted[0]?.dia_semana ?? "Lunes",
+        hora_inicio: extracted[0]?.hora_inicio ?? "08:00",
+        hora_fin: extracted[0]?.hora_fin ?? "10:00",
+      });
+      setSelectedProfessorId("");
+
+      if (extracted.length) {
+        const detailMessage = docenteResolved.message || `Se detectaron ${extracted.length} horarios automáticamente en el PDF.`;
+        setMessage(detailMessage);
+        await persistParsedHorarios(extracted);
+        return;
+      }
+
+      setMessage(docenteResolved.message || "El PDF se leyó y se preparó la carga, pero no coincidió con los nombres del sistema.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No fue posible procesar el PDF.");
+      setPdfText("");
+      setParsedHorarios([]);
+      console.error(error);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const persistParsedHorarios = async (scheduleToPersist: HorarioPayload[] = parsedHorarios) => {
+    if (!scheduleToPersist.length) {
+      setMessage("No hay horarios detectados para guardar.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const deduplicated: HorarioPayload[] = [];
+      const seen = new Set<string>();
+      for (const item of scheduleToPersist) {
+        const key = `${item.id_usuario}|${item.id_aula}|${item.dia_semana}|${item.hora_inicio}|${item.hora_fin}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          if (hasDuplicateHorario(item, form.id_horario ?? null)) {
+            const profesorNombre = getProfessorLabel(usuarios.find((usuario) => Number(usuario.id_usuario) === Number(item.id_usuario)));
+            setMessage(`No se puede guardar porque el horario de ${profesorNombre} ya existe.`);
+            return;
+          }
+          deduplicated.push(item);
+        }
+      }
+
+      if (!supabase) {
+        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const mapped = deduplicated.map((item) => {
+          const display = resolveHorarioDisplay(item.id_usuario, item.id_aula, usuarios, aulas);
+
+          return {
+            id_horario: Date.now() + Math.random(),
+            id_usuario: item.id_usuario,
+            id_aula: item.id_aula,
+            dia_semana: item.dia_semana,
+            hora_inicio: item.hora_inicio,
+            hora_fin: item.hora_fin,
+            usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido },
+            aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula },
+          } satisfies HorarioRecord;
+        });
+
+        const updated = [...mapped, ...current];
+        saveHorariosToLocal(updated);
+        setHorarios(updated);
+      } else {
+        for (const item of deduplicated) {
+          await saveSingleHorario(item);
+        }
+        await loadData();
+      }
+
+      hydrateFormFromExtracted(deduplicated);
+      setSelectedProfessorId("");
+      setMessage(`Se cargaron automáticamente ${deduplicated.length} horarios desde el PDF.`);
+      setParsedHorarios([]);
+      setPdfText("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el lote de horarios.");
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -203,6 +638,38 @@ export default function HorariosPage() {
         </div>
 
         <div className="booking-grid">
+          <div className="form-card">
+            <h3>Cargar horario desde PDF</h3>
+
+            <div className="form-grid">
+              <label className="full-width">
+                Archivo PDF
+                <input type="file" accept="application/pdf" onChange={handlePdfUpload} />
+              </label>
+            </div>
+
+            {pdfBusy ? <p className="form-feedback">Procesando archivo PDF...</p> : null}
+
+            {parsedHorarios.length ? (
+              <div className="form-actions" style={{ marginTop: "1rem" }}>
+                <button type="button" className="primary-button" onClick={() => persistParsedHorarios()} disabled={saving}>
+                  {saving ? "Guardando..." : `Guardar ${parsedHorarios.length} horarios detectados`}
+                </button>
+              </div>
+            ) : null}
+
+            {pdfText ? (
+              <div className="table-card" style={{ marginTop: "1rem" }}>
+                <div className="table-header">
+                  <h3>Texto extraído</h3>
+                </div>
+                <div style={{ whiteSpace: "pre-wrap", maxHeight: "220px", overflow: "auto", padding: "0.75rem" }}>
+                  {pdfText.slice(0, 1200)}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <form className="form-card" onSubmit={handleSubmit}>
             <h3>{form.id_horario ? "Editar horario" : "Registrar horario"}</h3>
 
@@ -212,7 +679,7 @@ export default function HorariosPage() {
                 <select value={form.id_usuario} onChange={(event) => handleChange("id_usuario", event.target.value)}>
                   <option value="">Selecciona docente</option>
                   {usuarios.map((usuario) => (
-                    <option key={usuario.id_usuario} value={usuario.id_usuario}>{usuario.nombre} {usuario.apellido}</option>
+                    <option key={usuario.id_usuario} value={usuario.id_usuario}>{getProfessorLabel(usuario)}</option>
                   ))}
                 </select>
               </label>
@@ -261,9 +728,15 @@ export default function HorariosPage() {
 
           <div className="table-card">
             <div className="table-header">
-              <h3>Horario docente</h3>
-              <span>{filtered.length} registros</span>
+              <h3>Horarios por profesor</h3>
+              <select value={selectedProfessorId} onChange={(event) => setSelectedProfessorId(event.target.value)}>
+                <option value="">Todos los docentes</option>
+                {usuarios.map((usuario) => (
+                  <option key={usuario.id_usuario} value={usuario.id_usuario}>{getProfessorLabel(usuario)}</option>
+                ))}
+              </select>
             </div>
+
             <div className="table-wrap">
               <table>
                 <thead>
@@ -276,13 +749,18 @@ export default function HorariosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((horario) => (
+                  {(selectedProfessorId ? teacherSchedule : filtered).map((horario) => (
                     <tr key={horario.id_horario}>
-                      <td>{horario.usuarios?.nombre ?? ""} {horario.usuarios?.apellido ?? ""}</td>
-                      <td>{horario.aulas?.nombre_aula ?? ""}</td>
+                      <td>{getProfessorLabel(usuarios.find((usuario) => Number(usuario.id_usuario) === Number(horario.id_usuario)) ?? horario.usuarios)}</td>
+                      <td>{horario.aulas?.nombre_aula ?? "Sin aula"}</td>
                       <td>{horario.dia_semana}</td>
                       <td>{horario.hora_inicio} - {horario.hora_fin}</td>
-                      <td><button type="button" className="ghost-button" onClick={() => handleEdit(horario)}>Editar</button></td>
+                      <td>
+                        <div className="inline-actions">
+                          <button type="button" className="ghost-button" onClick={() => handleEdit(horario)}>Editar</button>
+                          <button type="button" className="ghost-button danger" onClick={() => handleDelete(horario.id_horario)}>Eliminar</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

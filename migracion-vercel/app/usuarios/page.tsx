@@ -175,6 +175,29 @@ export default function UsuariosPage() {
     setMessage("Editando usuario seleccionado.");
   };
 
+  const handleDeleteUsuario = async (id_usuario: number) => {
+    if (!id_usuario) return;
+    const confirmed = window.confirm("¿Seguro que quieres eliminar este usuario?");
+    if (!confirmed) return;
+
+    try {
+      if (!supabase) {
+        const current = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as UsuarioRecord[];
+        const updated = current.filter((item) => item.id_usuario !== id_usuario);
+        localStorage.setItem("demo-usuarios", JSON.stringify(updated));
+        setUsuarios(updated);
+      } else {
+        const { error } = await supabase.from("usuarios").delete().eq("id_usuario", id_usuario);
+        if (error) throw error;
+        await loadData();
+      }
+      setMessage("Usuario eliminado correctamente.");
+    } catch (error) {
+      setMessage("No se pudo eliminar el usuario.");
+      console.error(error);
+    }
+  };
+
   return (
     <main className="page-shell">
       <RoleSidebar />
@@ -298,7 +321,12 @@ export default function UsuariosPage() {
                       <td>{usuario.email}</td>
                       <td>{usuario.roles?.nombre_rol ?? (usuario.id_rol === 1 ? "Superadministrador" : "Profesor")}</td>
                       <td><span className={`status ${usuario.estado === "Activo" ? "aprobada" : "pendiente"}`}>{usuario.estado}</span></td>
-                      <td><button type="button" className="ghost-button" onClick={() => handleEdit(usuario)}>Editar</button></td>
+                      <td>
+                        <div className="inline-actions">
+                          <button type="button" className="ghost-button" onClick={() => handleEdit(usuario)}>Editar</button>
+                          <button type="button" className="ghost-button danger" onClick={() => handleDeleteUsuario(usuario.id_usuario)}>Eliminar</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
