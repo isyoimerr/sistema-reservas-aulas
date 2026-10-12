@@ -1,9 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import RoleSidebar from "@/components/role-sidebar";
 import { useState } from "react";
 
 export default function DashboardPage() {
+  const recentActivities = [
+    { title: "Reserva creada para Aula 104", time: "Hace 15 min" },
+    { title: "Horario actualizado", time: "Hace 45 min" },
+    { title: "Solicitud confirmada", time: "Hace 2 horas" },
+    { title: "Cuenta revisada por administración", time: "Hace 1 día" },
+  ];
+
   const [role] = useState(() => {
     if (typeof window === "undefined") {
       return "Profesor";
@@ -22,18 +29,7 @@ export default function DashboardPage() {
 
   return (
     <main className="page-shell">
-      <aside className="sidebar">
-        <div className="brand-box">
-          <span>IE</span>
-          <strong>Reservas</strong>
-        </div>
-
-        <nav>
-          <Link href="/dashboard">Inicio</Link>
-          <Link href="/reservas">Reservas</Link>
-          <Link href="/login">Cerrar sesión</Link>
-        </nav>
-      </aside>
+      <RoleSidebar />
 
       <section className="content-panel">
         <header className="topbar">
@@ -62,9 +58,12 @@ export default function DashboardPage() {
           </article>
         </div>
 
-        <div className="card-grid two-columns">
-          <article className="info-card">
-            <h3>Próximas reservas</h3>
+        <div className="dashboard-layout">
+          <article className="info-card dashboard-section">
+            <div className="section-header">
+              <h3>Próximas reservas</h3>
+              <span>Agenda</span>
+            </div>
             <ul className="list">
               <li>Laboratorio 2 — 9:00 a 11:00</li>
               <li>Aula 104 — 12:30 a 14:00</li>
@@ -72,12 +71,21 @@ export default function DashboardPage() {
             </ul>
           </article>
 
-          <article className="info-card">
-            <h3>Recomendaciones</h3>
-            <ul className="list">
-              <li>Revisa la disponibilidad antes de crear una solicitud.</li>
-              <li>Usa la vista de horarios para evitar conflictos.</li>
-              <li>Los administradores revisan las reservas pendientes.</li>
+          <article className="info-card dashboard-section activity-card">
+            <div className="section-header">
+              <h3>Registro de actividades</h3>
+              <span>Reciente</span>
+            </div>
+            <ul className="activity-list">
+              {recentActivities.map((activity) => (
+                <li key={activity.title}>
+                  <span className="activity-dot" />
+                  <div>
+                    <strong>{activity.title}</strong>
+                    <small>{activity.time}</small>
+                  </div>
+                </li>
+              ))}
             </ul>
           </article>
         </div>

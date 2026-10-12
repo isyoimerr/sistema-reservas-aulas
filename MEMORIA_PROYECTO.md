@@ -91,6 +91,9 @@ Configuración actual por defecto:
 - reportes básicos
 - carga de horarios
 - diseño más moderno y responsivo
+- menú lateral automatizado con navegación institucional
+- registro, búsqueda y edición de reservas desde la interfaz
+- persistencia de usuarios y reservas en Supabase
 
 ## 10. Mejoras y pendientes
 - consolidar la experiencia móvil en todas las pantallas restantes

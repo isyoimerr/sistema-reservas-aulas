@@ -3,10 +3,50 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const demoAccounts = {
   "admin@sistema.com": { role: "Superadministrador", password: "admin123" },
   "profesor@sistema.com": { role: "Profesor", password: "profesor123" },
+};
+
+const getRoleName = (idRol: number | null | undefined) =>
+  idRol === 1 ? "Superadministrador" : "Profesor";
+
+const ensureDemoUsers = async () => {
+  if (!supabase) {
+    const stored = localStorage.getItem("demo-usuarios");
+    if (!stored) {
+      const seed = [
+        { nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com", password: "admin123", role: "Superadministrador" },
+        { nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com", password: "profesor123", role: "Profesor" },
+      ];
+      localStorage.setItem("demo-usuarios", JSON.stringify(seed));
+    }
+    return;
+  }
+
+  const seedAccounts = [
+    { nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com", password: "admin123", id_rol: 1, estado: "Activo" },
+    { nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com", password: "profesor123", id_rol: 2, estado: "Activo" },
+  ];
+
+  for (const account of seedAccounts) {
+    const { data: existing } = await supabase
+      .from("usuarios")
+      .select("id_usuario, password")
+      .eq("email", account.email)
+      .maybeSingle();
+
+    if (!existing) {
+      await supabase.from("usuarios").insert(account);
+      continue;
+    }
+
+    if (existing.password !== account.password) {
+      await supabase.from("usuarios").update({ password: account.password }).eq("email", account.email);
+    }
+  }
 };
 
 export default function LoginPage() {
@@ -15,20 +55,59 @@ export default function LoginPage() {
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const account = demoAccounts[email as keyof typeof demoAccounts];
+    await ensureDemoUsers();
 
-    if (!account || account.password !== password) {
-      setError("Credenciales inválidas. Prueba admin@sistema.com / admin123");
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (supabase) {
+      const { data, error: dbError } = await supabase
+        .from("usuarios")
+        .select("id_usuario, nombre, apellido, email, password, id_rol")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (dbError) {
+        setError("No se pudo validar la cuenta en Supabase.");
+        return;
+      }
+
+      if (!data || data.password !== password) {
+        setError("Credenciales inválidas. Prueba admin@sistema.com / admin123 o crea una cuenta nueva.");
+        return;
+      }
+
+      const role = getRoleName(data.id_rol);
+      localStorage.setItem("session-role", role);
+      localStorage.setItem("session-email", normalizedEmail);
+      localStorage.setItem("session-user-id", String(data.id_usuario));
+      setError("");
+
+      if (role === "Superadministrador") {
+        router.push("/admin");
+        return;
+      }
+
+      router.push("/dashboard");
       return;
     }
 
-    localStorage.setItem("session-role", account.role);
-    localStorage.setItem("session-email", email);
+    const storedUsers = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;
+    const registeredUser = storedUsers.find((user) => user.email.toLowerCase() === normalizedEmail);
+    const account = demoAccounts[normalizedEmail as keyof typeof demoAccounts];
+    const match = registeredUser ?? account;
+
+    if (!match || (match.password ?? "") !== password) {
+      setError("Credenciales inválidas. Prueba admin@sistema.com / admin123 o crea una cuenta nueva.");
+      return;
+    }
+
+    localStorage.setItem("session-role", match.role ?? "Profesor");
+    localStorage.setItem("session-email", normalizedEmail);
     setError("");
 
-    if (account.role === "Superadministrador") {
+    if (match.role === "Superadministrador") {
       router.push("/admin");
       return;
     }
@@ -40,12 +119,10 @@ export default function LoginPage() {
     <main className="auth-shell">
       <section className="auth-panel">
         <div className="auth-copy">
-          <p className="eyebrow">Migración segura</p>
-          <h1>Acceso al sistema</h1>
+          <p className="eyebrow">Acceso institucional</p>
+          <h1>Reservas académicas</h1>
           <p>
-            Esta versión de prueba refleja la lógica de autenticación del sistema
-            original y está lista para conectarse a Supabase cuando se añadan las
-            credenciales reales.
+            Sistema de gestión de aulas y reservas para docentes y personal administrativo.
           </p>
         </div>
 

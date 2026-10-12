@@ -1,0 +1,103 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+const adminMenu = [
+  { label: "Home", href: "/admin" },
+  { label: "Dashboard", href: "/admin" },
+  { label: "Reservas", href: "/reservas" },
+  { label: "Aulas", href: "/aulas" },
+  { label: "Usuarios", href: "/usuarios" },
+  { label: "Horarios", href: "/horarios" },
+  { label: "Reportes", href: "/reportes" },
+  { label: "Perfil", href: "/perfil" },
+];
+
+const professorMenu = [
+  { label: "Home", href: "/dashboard" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Mis reservas", href: "/reservas" },
+  { label: "Reservas", href: "/reservas" },
+  { label: "Horarios", href: "/horarios" },
+  { label: "Perfil", href: "/perfil" },
+];
+
+export default function RoleSidebar() {
+  const router = useRouter();
+  const [role, setRole] = useState("Profesor");
+  const [menuOpen, setMenuOpen] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  useEffect(() => {
+    const storedRole = window.localStorage.getItem("session-role") ?? "Profesor";
+    setRole(storedRole);
+  }, []);
+
+  const isAdmin = role === "Superadministrador";
+  const menu = isAdmin ? adminMenu : professorMenu;
+
+  const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("session-role");
+    localStorage.removeItem("session-email");
+    localStorage.removeItem("session-user-id");
+    setShowLogoutModal(false);
+    router.push("/login");
+  };
+
+  return (
+    <>
+      <aside className={`role-sidebar ${isAdmin ? "admin" : "profesor"} ${menuOpen ? "menu-open" : "menu-closed"}`}>
+        <div className="sidebar-header">
+          <div className="brand-box">
+            <span>{isAdmin ? "AD" : "PR"}</span>
+            <strong>{isAdmin ? "Admin" : "Profesor"}</strong>
+          </div>
+
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-label="Alternar menú"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            ☰
+          </button>
+        </div>
+
+        <nav className={`sidebar-menu ${menuOpen ? "open" : ""}`} aria-label="Menú lateral principal">
+          {menu.map((item) => (
+            <Link key={item.label} href={item.href} className="sidebar-item" onClick={() => setMenuOpen(false)}>
+              {item.label}
+            </Link>
+          ))}
+
+          <button type="button" className="sidebar-logout" onClick={handleLogout}>
+            SALIR
+          </button>
+        </nav>
+      </aside>
+
+      {showLogoutModal ? (
+        <div className="logout-modal-backdrop" onClick={() => setShowLogoutModal(false)}>
+          <div className="logout-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="logout-modal-header">
+              <span className="logout-badge">Code</span>
+              <button type="button" className="logout-close" onClick={() => setShowLogoutModal(false)} aria-label="Cerrar">×</button>
+            </div>
+            <p>¿Deseas cerrar sesión?</p>
+            <div className="logout-actions">
+              <button type="button" className="primary-button" onClick={confirmLogout}>Confirmar salida</button>
+              <button type="button" className="secondary-button" onClick={() => setShowLogoutModal(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}

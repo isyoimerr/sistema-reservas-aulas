@@ -21,6 +21,19 @@ El proyecto ya está funcionando como una aplicación PHP modular con autenticac
 - Bootstrap 5
 - Bootstrap Icons
 - JavaScript para interacciones del panel y controles responsivos
+- Next.js 16 + React 19 para la migración Vercel
+- Supabase PostgreSQL para persistencia y autenticación institucional
+
+## Funcionalidades principales ya incorporadas
+- Menú lateral izquierdo con opciones de navegación del sistema.
+- Registro de usuarios docentes desde la interfaz.
+- Inicio de sesión con validación por correo y contraseña.
+- Búsqueda de reservas por aula, docente, motivo o estado.
+- Registro de nuevas reservas desde el dashboard.
+- Edición de reservas existentes desde la tabla.
+- Validación de disponibilidad y estados de reserva.
+- Dashboard administrativo con métricas rápidas.
+- Persistencia real en Supabase cuando la configuración está activa.
 
 ## Roles y flujo principal
 - Superadministrador: acceso completo a gestión, usuarios, aulas, reservas, horarios y reportes.

@@ -92,6 +92,29 @@ CREATE TABLE bitacora_actividad (
     CONSTRAINT fk_bitacora_actividad_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE aulas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE horarios_docentes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE historial_reservas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bitacora_actividad ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "roles_select_public" ON roles FOR SELECT USING (true);
+CREATE POLICY "usuarios_select_public" ON usuarios FOR SELECT USING (true);
+CREATE POLICY "usuarios_insert_public" ON usuarios FOR INSERT WITH CHECK (true);
+CREATE POLICY "usuarios_update_public" ON usuarios FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "aulas_select_public" ON aulas FOR SELECT USING (true);
+CREATE POLICY "horarios_select_public" ON horarios_docentes FOR SELECT USING (true);
+CREATE POLICY "horarios_insert_public" ON horarios_docentes FOR INSERT WITH CHECK (true);
+CREATE POLICY "reservas_select_public" ON reservas FOR SELECT USING (true);
+CREATE POLICY "reservas_insert_public" ON reservas FOR INSERT WITH CHECK (true);
+CREATE POLICY "reservas_update_public" ON reservas FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "historial_select_public" ON historial_reservas FOR SELECT USING (true);
+CREATE POLICY "historial_insert_public" ON historial_reservas FOR INSERT WITH CHECK (true);
+CREATE POLICY "bitacora_select_public" ON bitacora_actividad FOR SELECT USING (true);
+CREATE POLICY "bitacora_insert_public" ON bitacora_actividad FOR INSERT WITH CHECK (true);
+
 CREATE INDEX idx_usuarios_email ON usuarios(email);
 CREATE INDEX idx_usuarios_rol ON usuarios(id_rol);
 CREATE INDEX idx_aulas_estado ON aulas(estado);
