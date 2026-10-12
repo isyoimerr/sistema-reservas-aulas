@@ -1,0 +1,16 @@
+# PHP / local
+/vendor/
+*.log
+.DS_Store
+
+# IDE / entorno
+.vscode/
+.idea/
+
+# Temp / uploads
+/uploads/
+*.tmp
+
+# Secrets / env
+.env
+.env.*
