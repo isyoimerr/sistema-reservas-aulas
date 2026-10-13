@@ -2,15 +2,33 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+const isValidSupabaseUrl = (value: string | undefined) =>
+  typeof value === "string" && /^https:\/\/.+\.supabase\.co(\/)?$/i.test(value.trim());
 
 export const supabase =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
+  !demoMode && isValidSupabaseUrl(supabaseUrl) && typeof supabaseAnonKey === "string" && supabaseAnonKey.trim().length > 0
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      })
     : null;
 
 export const isSupabaseConfigured = Boolean(supabase);
+export const isDemoModeEnabled = demoMode;
 
 export async function checkSupabaseConnection() {
+  if (demoMode) {
+    return {
+      ok: false,
+      error: "La aplicación está en modo demo. Supabase está desactivado temporalmente.",
+    };
+  }
+
   if (!supabase) {
     return {
       ok: false,
