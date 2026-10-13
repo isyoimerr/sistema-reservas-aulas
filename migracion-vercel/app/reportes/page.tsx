@@ -1,6 +1,8 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
+import { isAdminSession } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -20,6 +22,7 @@ const fallbackReservas: ReservaRecord[] = [
 ];
 
 export default function ReportesPage() {
+  const router = useRouter();
   const [reservas, setReservas] = useState<ReservaRecord[]>([]);
 
   const loadData = async () => {
@@ -38,8 +41,20 @@ export default function ReportesPage() {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem("session-role");
+
+    if (!isAdminSession()) {
+      if (role === "Profesor") {
+        router.replace("/dashboard");
+        return;
+      }
+
+      router.replace("/login");
+      return;
+    }
+
     loadData();
-  }, []);
+  }, [router]);
 
   const summary = useMemo(() => {
     const counts = { Pendiente: 0, Aprobada: 0, Rechazada: 0, Cancelada: 0 };

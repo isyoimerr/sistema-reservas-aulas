@@ -100,20 +100,74 @@ ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE historial_reservas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bitacora_actividad ENABLE ROW LEVEL SECURITY;
 
+CREATE OR REPLACE FUNCTION public.user_has_role(_role_name text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM public.usuarios u
+        INNER JOIN public.roles r ON r.id_rol = u.id_rol
+        WHERE lower(COALESCE(u.email, '')) = lower(COALESCE(auth.email(), ''))
+          AND lower(r.nombre_rol) = lower(_role_name)
+    );
+END;
+$$;
+
 CREATE POLICY "roles_select_public" ON roles FOR SELECT USING (true);
-CREATE POLICY "usuarios_select_public" ON usuarios FOR SELECT USING (true);
-CREATE POLICY "usuarios_insert_public" ON usuarios FOR INSERT WITH CHECK (true);
-CREATE POLICY "usuarios_update_public" ON usuarios FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "usuarios_select_own_or_admin" ON usuarios FOR SELECT USING (
+    lower(COALESCE(email, '')) = lower(COALESCE(auth.email(), ''))
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "usuarios_insert_admin_only" ON usuarios FOR INSERT WITH CHECK (user_has_role('Superadministrador'));
+CREATE POLICY "usuarios_update_admin_only" ON usuarios FOR UPDATE USING (user_has_role('Superadministrador')) WITH CHECK (user_has_role('Superadministrador'));
 CREATE POLICY "aulas_select_public" ON aulas FOR SELECT USING (true);
-CREATE POLICY "horarios_select_public" ON horarios_docentes FOR SELECT USING (true);
-CREATE POLICY "horarios_insert_public" ON horarios_docentes FOR INSERT WITH CHECK (true);
-CREATE POLICY "reservas_select_public" ON reservas FOR SELECT USING (true);
-CREATE POLICY "reservas_insert_public" ON reservas FOR INSERT WITH CHECK (true);
-CREATE POLICY "reservas_update_public" ON reservas FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "historial_select_public" ON historial_reservas FOR SELECT USING (true);
-CREATE POLICY "historial_insert_public" ON historial_reservas FOR INSERT WITH CHECK (true);
-CREATE POLICY "bitacora_select_public" ON bitacora_actividad FOR SELECT USING (true);
-CREATE POLICY "bitacora_insert_public" ON bitacora_actividad FOR INSERT WITH CHECK (true);
+CREATE POLICY "aulas_insert_admin_only" ON aulas FOR INSERT WITH CHECK (user_has_role('Superadministrador'));
+CREATE POLICY "aulas_update_admin_only" ON aulas FOR UPDATE USING (user_has_role('Superadministrador')) WITH CHECK (user_has_role('Superadministrador'));
+CREATE POLICY "aulas_delete_admin_only" ON aulas FOR DELETE USING (user_has_role('Superadministrador'));
+CREATE POLICY "horarios_select_own_or_admin" ON horarios_docentes FOR SELECT USING (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "horarios_manage_own_or_admin" ON horarios_docentes FOR INSERT WITH CHECK (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "horarios_update_own_or_admin" ON horarios_docentes FOR UPDATE USING (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+) WITH CHECK (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "reservas_select_own_or_admin" ON reservas FOR SELECT USING (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "reservas_insert_own_or_admin" ON reservas FOR INSERT WITH CHECK (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "reservas_update_own_or_admin" ON reservas FOR UPDATE USING (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+) WITH CHECK (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
+CREATE POLICY "historial_select_admin_only" ON historial_reservas FOR SELECT USING (user_has_role('Superadministrador'));
+CREATE POLICY "historial_insert_admin_or_owner" ON historial_reservas FOR INSERT WITH CHECK (
+    user_has_role('Superadministrador')
+    OR id_usuario_accion = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+);
+CREATE POLICY "bitacora_select_admin_only" ON bitacora_actividad FOR SELECT USING (user_has_role('Superadministrador'));
+CREATE POLICY "bitacora_insert_own_or_admin" ON bitacora_actividad FOR INSERT WITH CHECK (
+    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR user_has_role('Superadministrador')
+);
 
 CREATE INDEX idx_usuarios_email ON usuarios(email);
 CREATE INDEX idx_usuarios_rol ON usuarios(id_rol);

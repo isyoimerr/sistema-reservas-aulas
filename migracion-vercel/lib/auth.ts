@@ -25,3 +25,20 @@ export function isProfessorSession() {
 export function isAuthenticatedRole(role: string | null) {
   return role === ADMIN_ROLE || role === PROFESSOR_ROLE;
 }
+
+export function canAccessRoute(pathname: string, role: string | null) {
+  const normalizedPath = pathname.split("?")[0].replace(/\/$/, "") || "/";
+
+  const adminRoutes = ["/admin", "/aulas", "/usuarios", "/reportes"];
+  const professorRoutes = ["/dashboard", "/horarios", "/reservas", "/perfil"];
+
+  if (role === ADMIN_ROLE) {
+    return true;
+  }
+
+  if (role === PROFESSOR_ROLE) {
+    return professorRoutes.includes(normalizedPath) || normalizedPath === "/login" || normalizedPath === "/";
+  }
+
+  return normalizedPath === "/login" || normalizedPath === "/";
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
+import { isAdminSession, isProfessorSession } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -77,6 +79,7 @@ const fallbackLocalData: ReservaRecord[] = [
 ];
 
 export default function ReservasPage() {
+  const router = useRouter();
   const [reservas, setReservas] = useState<ReservaRecord[]>([]);
   const [usuarios, setUsuarios] = useState<Array<Record<string, any>>>([]);
   const [aulas, setAulas] = useState<Array<Record<string, any>>>([]);
@@ -160,8 +163,20 @@ export default function ReservasPage() {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem("session-role");
+
+    if (!isProfessorSession() && !isAdminSession()) {
+      router.replace("/login");
+      return;
+    }
+
+    if (!isAdminSession() && role !== "Profesor") {
+      router.replace("/login");
+      return;
+    }
+
     loadData();
-  }, []);
+  }, [router]);
 
   const filteredReservas = useMemo(() => {
     const query = normalizeText(search);

@@ -1,6 +1,8 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
+import { isAdminSession } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -41,6 +43,7 @@ const fallbackUsuarios: UsuarioRecord[] = [
 ];
 
 export default function UsuariosPage() {
+  const router = useRouter();
   const [usuarios, setUsuarios] = useState<UsuarioRecord[]>([]);
   const [roles, setRoles] = useState<Array<{ id_rol: number; nombre_rol: string }>>([]);
   const [search, setSearch] = useState("");
@@ -97,8 +100,20 @@ export default function UsuariosPage() {
   };
 
   useEffect(() => {
+    const role = localStorage.getItem("session-role");
+
+    if (!isAdminSession()) {
+      if (role === "Profesor") {
+        router.replace("/dashboard");
+        return;
+      }
+
+      router.replace("/login");
+      return;
+    }
+
     loadData();
-  }, []);
+  }, [router]);
 
   const filtered = useMemo(() => {
     const query = normalizeText(search);
