@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 const demoAccounts = {
@@ -60,6 +61,16 @@ export default function LoginPage() {
     await ensureDemoUsers();
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    if (isAdminSession() || isProfessorSession()) {
+      const currentRole = localStorage.getItem("session-role");
+      if (currentRole === "Superadministrador") {
+        router.push("/admin");
+        return;
+      }
+      router.push("/dashboard");
+      return;
+    }
 
     if (supabase) {
       const { data, error: dbError } = await supabase

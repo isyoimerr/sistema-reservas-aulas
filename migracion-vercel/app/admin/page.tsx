@@ -1,6 +1,7 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
+import { isAdminSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -19,14 +20,19 @@ export default function AdminPage() {
 
   useEffect(() => {
     const role = localStorage.getItem("session-role");
-    const sessionEmail = localStorage.getItem("session-email") ?? "admin@sistema.com";
+    const sessionEmail = localStorage.getItem("session-email") ?? "";
 
-    if (role !== "Superadministrador") {
+    if (!isAdminSession()) {
+      if (role === "Profesor") {
+        router.replace("/dashboard");
+        return;
+      }
+
       router.replace("/login");
       return;
     }
 
-    setEmail(sessionEmail);
+    setEmail(sessionEmail || "admin@sistema.com");
 
     const loadStats = async () => {
       if (!supabase) {

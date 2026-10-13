@@ -1,15 +1,36 @@
 "use client";
 
 import RoleSidebar from "@/components/role-sidebar";
-import { useState } from "react";
+import { isAdminSession, isProfessorSession } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const recentActivities = [
     { title: "Reserva creada para Aula 104", time: "Hace 15 min" },
     { title: "Horario actualizado", time: "Hace 45 min" },
     { title: "Solicitud confirmada", time: "Hace 2 horas" },
     { title: "Cuenta revisada por administración", time: "Hace 1 día" },
   ];
+
+  useEffect(() => {
+    const role = localStorage.getItem("session-role");
+
+    if (!isProfessorSession()) {
+      if (isAdminSession()) {
+        router.replace("/admin");
+        return;
+      }
+
+      router.replace("/login");
+      return;
+    }
+
+    if (role !== "Profesor") {
+      router.replace("/login");
+    }
+  }, [router]);
 
   const [role] = useState(() => {
     if (typeof window === "undefined") {

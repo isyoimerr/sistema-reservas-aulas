@@ -7,9 +7,12 @@ const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const isValidSupabaseUrl = (value: string | undefined) =>
   typeof value === "string" && /^https:\/\/.+\.supabase\.co(\/)?$/i.test(value.trim());
 
+const resolvedSupabaseUrl = typeof supabaseUrl === "string" ? supabaseUrl.trim() : "";
+const resolvedSupabaseAnonKey = typeof supabaseAnonKey === "string" ? supabaseAnonKey.trim() : "";
+
 export const supabase =
-  !demoMode && isValidSupabaseUrl(supabaseUrl) && typeof supabaseAnonKey === "string" && supabaseAnonKey.trim().length > 0
-    ? createClient(supabaseUrl, supabaseAnonKey, {
+  !demoMode && isValidSupabaseUrl(resolvedSupabaseUrl) && resolvedSupabaseAnonKey.length > 0
+    ? createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
