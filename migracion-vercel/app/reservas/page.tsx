@@ -138,7 +138,10 @@ export default function ReservasPage() {
     }
 
     try {
-      const reservasQuery = supabase.from("reservas").select("*, usuarios(nombre, apellido, email), aulas(codigo_aula, nombre_aula)").order("fecha_reserva", { ascending: false });
+      const reservasQuery = supabase
+        .from("reservas")
+        .select("*, usuarios!fk_reservas_usuarios(nombre, apellido, email), aulas!fk_reservas_aulas(codigo_aula, nombre_aula)")
+        .order("fecha_reserva", { ascending: false });
 
       const [usuariosResult, aulasResult, reservasResult] = await Promise.all([
         supabase.from("usuarios").select("*").order("nombre", { ascending: true }),
@@ -249,6 +252,7 @@ export default function ReservasPage() {
     event.preventDefault();
     setSaving(true);
 
+    const connectionStatus = getSupabaseStatus();
     const resolvedUserId = isAdmin ? Number(form.id_usuario) : Number(currentUserId || form.id_usuario || 0);
 
     const finalEstado = isAdmin ? form.estado : "Pendiente";
@@ -298,6 +302,10 @@ export default function ReservasPage() {
               aulas: { codigo_aula: "Aula", nombre_aula: "Aula" },
             } as ReservaRecord, ...existingReservas];
 
+        if (!connectionStatus.enabled) {
+          throw new Error(connectionStatus.message);
+        }
+
         const nextReservas = updated.filter((item) => isAdmin || Number(item.id_usuario) === Number(currentUserId));
         localStorage.setItem("demo-reservas", JSON.stringify(nextReservas));
         appendAuditEntry({
@@ -335,7 +343,8 @@ export default function ReservasPage() {
       setMessage(form.id_reserva ? "Reserva actualizada correctamente." : "Reserva registrada correctamente.");
       setForm(emptyForm);
     } catch (error) {
-      setMessage("No se pudo guardar la reserva. Revisa los datos o la conexión con Supabase.");
+      const detail = error instanceof Error ? error.message : "No se pudo guardar la reserva. Revisa los datos o la conexión con Supabase.";
+      setMessage(detail || "No se pudo guardar la reserva. Revisa los datos o la conexión con Supabase.");
       console.error(error);
     } finally {
       setSaving(false);
