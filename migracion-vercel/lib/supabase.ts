@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+const demoModeEnvValue = process.env.NEXT_PUBLIC_DEMO_MODE?.toLowerCase() ?? "";
+const demoMode = demoModeEnvValue === "true" || (!supabaseUrl && !supabaseAnonKey);
 
 const isValidSupabaseUrl = (value: string | undefined) =>
   typeof value === "string" && /^https:\/\/.+\.supabase\.co(\/)?$/i.test(value.trim());
