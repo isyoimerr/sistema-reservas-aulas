@@ -16,18 +16,40 @@ const adminMenu = [
 ];
 
 const professorMenu = [
-  { label: "Mis reservas", href: "/reservas" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Reservas", href: "/reservas" },
+  { label: "Horarios", href: "/horarios" },
+  { label: "Perfil", href: "/perfil" },
 ];
 
 export default function RoleSidebar() {
   const router = useRouter();
   const [role, setRole] = useState("Profesor");
+  const [displayName, setDisplayName] = useState("Profesor");
   const [menuOpen, setMenuOpen] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const storedRole = window.localStorage.getItem("session-role") ?? "Profesor";
+    const storedName = window.localStorage.getItem("session-name");
+    const storedUserId = Number(window.localStorage.getItem("session-user-id") ?? 0);
+    const storedUsers = JSON.parse(window.localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, any>>;
+
     setRole(storedRole);
+
+    if (storedName) {
+      setDisplayName(storedName);
+      return;
+    }
+
+    const matchedUser = storedUsers.find((user) => Number(user.id_usuario) === storedUserId);
+    if (matchedUser) {
+      const nextName = `${matchedUser.nombre ?? ""} ${matchedUser.apellido ?? ""}`.trim();
+      setDisplayName(nextName || "Profesor");
+      return;
+    }
+
+    setDisplayName(storedRole === "Superadministrador" ? "Admin" : "Profesor");
   }, []);
 
   const isAdmin = role === "Superadministrador";
@@ -50,8 +72,11 @@ export default function RoleSidebar() {
       <aside className={`role-sidebar ${isAdmin ? "admin" : "profesor"} ${menuOpen ? "menu-open" : "menu-closed"}`}>
         <div className="sidebar-header">
           <div className="brand-box">
-            <span>{isAdmin ? "AD" : "PR"}</span>
-            <strong>{isAdmin ? "Admin" : "Profesor"}</strong>
+            <img src="/logo-institucion.png" alt="Logo institucional" className="institutional-logo" />
+            <div className="brand-box-copy">
+              <strong>{isAdmin ? "Admin" : displayName}</strong>
+              <small>{isAdmin ? "Coordinación" : "Docente"}</small>
+            </div>
           </div>
 
           <button
@@ -76,6 +101,11 @@ export default function RoleSidebar() {
             SALIR
           </button>
         </nav>
+
+        <div className="sidebar-legal">
+          <strong>Proyecto Grado 11</strong>
+          <span>Sistema de reservas académicas</span>
+        </div>
       </aside>
 
       {showLogoutModal ? (

@@ -7,15 +7,17 @@ import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const recentActivities = [
-    { title: "Reserva creada para Aula 104", time: "Hace 15 min" },
-    { title: "Horario actualizado", time: "Hace 45 min" },
-    { title: "Solicitud confirmada", time: "Hace 2 horas" },
-    { title: "Cuenta revisada por administración", time: "Hace 1 día" },
-  ];
+  const [role, setRole] = useState("Profesor");
+  const [email, setEmail] = useState("profesor@sistema.com");
+  const [stats, setStats] = useState({ aulasActivas: 0, reservasEsteMes: 0, disponiblesHoy: 0 });
+  const [recentActivities, setRecentActivities] = useState<Array<{ title: string; time: string }>>([]);
 
   useEffect(() => {
-    const role = localStorage.getItem("session-role");
+    const storedRole = localStorage.getItem("session-role") ?? "Profesor";
+    const storedEmail = localStorage.getItem("session-email") ?? "profesor@sistema.com";
+
+    setRole(storedRole);
+    setEmail(storedEmail);
 
     if (!isProfessorSession()) {
       if (isAdminSession()) {
@@ -27,26 +29,41 @@ export default function DashboardPage() {
       return;
     }
 
-    if (role !== "Profesor") {
+    if (storedRole !== "Profesor") {
       router.replace("/login");
+      return;
     }
+
+    const reservas = JSON.parse(localStorage.getItem("demo-reservas") ?? "[]") as Array<Record<string, any>>;
+    const aulas = JSON.parse(localStorage.getItem("demo-aulas") ?? "[]") as Array<Record<string, any>>;
+    const auditoria = JSON.parse(localStorage.getItem("demo-auditoria") ?? "[]") as Array<Record<string, any>>;
+
+    const fechaActual = new Date();
+    const reservasEsteMes = reservas.filter((reserva) => {
+      const fecha = new Date(reserva.fecha_reserva ?? fechaActual.toISOString());
+      return fecha.getMonth() === fechaActual.getMonth() && fecha.getFullYear() === fechaActual.getFullYear();
+    }).length;
+
+    const reservasHoy = reservas.filter((reserva) => reserva.fecha_reserva === fechaActual.toISOString().split("T")[0]).length;
+    const disponiblesHoy = Math.max(0, (aulas.length || 6) - reservasHoy);
+
+    setStats({
+      aulasActivas: aulas.length || 12,
+      reservasEsteMes: reservasEsteMes || reservas.length || 0,
+      disponiblesHoy,
+    });
+
+    const activities = (auditoria.length ? auditoria : [
+      { action: "Reserva creada para Aula 104", timestamp: new Date().toISOString() },
+      { action: "Horario actualizado", timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString() },
+      { action: "Solicitud confirmada", timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+    ]).slice(0, 4).map((entry) => ({
+      title: entry.summary || entry.action || "Actividad de sistema",
+      time: new Date(entry.timestamp).toLocaleDateString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+    }));
+
+    setRecentActivities(activities);
   }, [router]);
-
-  const [role] = useState(() => {
-    if (typeof window === "undefined") {
-      return "Profesor";
-    }
-
-    return localStorage.getItem("session-role") ?? "Profesor";
-  });
-
-  const [email] = useState(() => {
-    if (typeof window === "undefined") {
-      return "profesor@sistema.com";
-    }
-
-    return localStorage.getItem("session-email") ?? "profesor@sistema.com";
-  });
 
   return (
     <main className="page-shell">
@@ -67,15 +84,15 @@ export default function DashboardPage() {
         <div className="stats-grid">
           <article className="stat-card accent">
             <p>Aulas activas</p>
-            <strong>12</strong>
+            <strong>{stats.aulasActivas}</strong>
           </article>
           <article className="stat-card">
             <p>Reservas este mes</p>
-            <strong>38</strong>
+            <strong>{String(stats.reservasEsteMes).padStart(2, "0")}</strong>
           </article>
           <article className="stat-card">
             <p>Disponibles hoy</p>
-            <strong>06</strong>
+            <strong>{String(stats.disponiblesHoy).padStart(2, "0")}</strong>
           </article>
         </div>
 

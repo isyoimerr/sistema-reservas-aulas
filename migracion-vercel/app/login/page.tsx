@@ -63,10 +63,15 @@ const authenticateDemoUser = (normalizedEmail: string, password: string) => {
     return null;
   }
 
+  const matchRecord = match as Record<string, any>;
+  const accountRecord = account as Record<string, any> | undefined;
+  const fullName = `${matchRecord?.nombre ?? accountRecord?.nombre ?? "Profesor"} ${matchRecord?.apellido ?? accountRecord?.apellido ?? ""}`.trim();
+
   return {
-    id_usuario: Number((match as Record<string, unknown>).id_usuario ?? account?.id_usuario ?? 2),
-    role: match.role ?? "Profesor",
+    id_usuario: Number(matchRecord?.id_usuario ?? accountRecord?.id_usuario ?? 2),
+    role: matchRecord?.role ?? accountRecord?.role ?? "Profesor",
     email: normalizedEmail,
+    nombre: fullName,
   };
 };
 
@@ -102,9 +107,11 @@ export default function LoginPage() {
 
         if (!dbError && data && data.password === password) {
           const role = getRoleName(data.id_rol);
+          const nombreCompleto = `${data.nombre ?? ""} ${data.apellido ?? ""}`.trim();
           localStorage.setItem("session-role", role);
           localStorage.setItem("session-email", normalizedEmail);
           localStorage.setItem("session-user-id", String(data.id_usuario));
+          localStorage.setItem("session-name", nombreCompleto || "Profesor");
           setError("");
 
           if (role === "Superadministrador") {
@@ -129,6 +136,7 @@ export default function LoginPage() {
     localStorage.setItem("session-role", demoUser.role);
     localStorage.setItem("session-email", demoUser.email);
     localStorage.setItem("session-user-id", String(demoUser.id_usuario));
+    localStorage.setItem("session-name", demoUser.nombre || "Profesor");
     setError("");
 
     if (demoUser.role === "Superadministrador") {

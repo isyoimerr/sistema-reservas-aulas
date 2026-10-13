@@ -18,6 +18,22 @@ NEXT_PUBLIC_APP_NAME="Sistema de Reservas"
 NEXT_PUBLIC_DEMO_MODE=true
 ```
 
+## Fase 2: base de datos en Supabase
+Se deja lista la preparación para esta fase sin romper el flujo local:
+
+- `supabase/schema.sql` contiene la base estructural del sistema.
+- `lib/supabase.ts` valida la conexión y activa modo demo si faltan credenciales.
+- `NEXT_PUBLIC_DEMO_MODE=true` conserva la app usable mientras no se conecte a Supabase real.
+- El siguiente paso real es crear el proyecto en Supabase, importar el schema y verificar roles, usuarios y políticas RLS.
+
+Checklist de validación recomendada:
+1. Crear proyecto en Supabase.
+2. Ejecutar `supabase/schema.sql`.
+3. Revisar tablas: `roles`, `usuarios`, `aulas`, `horarios`, `reservas`.
+4. Crear cuentas de prueba para administrador y docente.
+5. Validar permisos por rol.
+6. Confirmar que no hay secretos hardcodeados y que `.env.local` no se sube al repositorio.
+
 ## Ejecutar localmente
 
 ```bash

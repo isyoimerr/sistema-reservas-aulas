@@ -47,44 +47,70 @@ export default function RegistroPage() {
     const normalizedEmail = form.email.trim().toLowerCase();
 
     if (supabase) {
-      const { data: existingUser, error: lookupError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("email", normalizedEmail)
-        .maybeSingle();
+      try {
+        const { data: existingUser, error: lookupError } = await supabase
+          .from("usuarios")
+          .select("id_usuario")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
 
-      if (lookupError) {
-        setError("No se pudo verificar si el usuario ya existe en Supabase.");
-        setSuccess("");
+        if (lookupError) {
+          throw lookupError;
+        }
+
+        if (existingUser) {
+          setError("Ya existe un usuario registrado con ese correo.");
+          setSuccess("");
+          return;
+        }
+
+        const { error: insertError } = await supabase.from("usuarios").insert({
+          nombre: form.nombre.trim(),
+          apellido: form.apellido.trim(),
+          email: normalizedEmail,
+          password: form.password,
+          id_rol: 2,
+          estado: "Activo",
+        });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        setError("");
+        setSuccess("Registro exitoso. Ya puedes iniciar sesión.");
+        setForm(emptyForm);
+        setTimeout(() => router.push("/login"), 800);
+        return;
+      } catch {
+        const existing = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;
+        const alreadyExists = existing.some((user) => user.email === normalizedEmail);
+
+        if (alreadyExists) {
+          setError("Ya existe un usuario registrado con ese correo.");
+          setSuccess("");
+          return;
+        }
+
+        const users = [
+          ...existing,
+          {
+            nombre: form.nombre.trim(),
+            apellido: form.apellido.trim(),
+            email: normalizedEmail,
+            password: form.password,
+            role: "Profesor",
+          },
+        ];
+
+        localStorage.setItem("demo-usuarios", JSON.stringify(users));
+        setError("");
+        setSuccess("Supabase no respondió correctamente; se registró en modo respaldo local. Puedes iniciar sesión normalmente.");
+        setForm(emptyForm);
+
+        setTimeout(() => router.push("/login"), 900);
         return;
       }
-
-      if (existingUser) {
-        setError("Ya existe un usuario registrado con ese correo.");
-        setSuccess("");
-        return;
-      }
-
-      const { error: insertError } = await supabase.from("usuarios").insert({
-        nombre: form.nombre.trim(),
-        apellido: form.apellido.trim(),
-        email: normalizedEmail,
-        password: form.password,
-        id_rol: 2,
-        estado: "Activo",
-      });
-
-      if (insertError) {
-        setError("No se pudo guardar en Supabase. Revisa la conexión y la estructura de la tabla.");
-        setSuccess("");
-        return;
-      }
-
-      setError("");
-      setSuccess("Registro exitoso. Ya puedes iniciar sesión.");
-      setForm(emptyForm);
-      setTimeout(() => router.push("/login"), 800);
-      return;
     }
 
     const existing = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;

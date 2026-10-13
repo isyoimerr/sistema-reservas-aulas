@@ -31,6 +31,13 @@ El proyecto se encuentra en una etapa de consolidación institucional: la base f
 - El estado de infraestructura es viable para producción si se validan el esquema SQL y las variables reales del entorno de Supabase/Vercel.
 - La compilación completa del proyecto puede necesitar validación desde una terminal más estable, ya que en esta sesión el terminal de ejecución no respondió de forma consistente a comandos del entorno.
 
+### Fase 2: Base de datos en Supabase (preparada)
+- Se dejó la migración del proyecto en la carpeta `migracion-vercel` con un cliente de Supabase seguro y una validación de configuración por variables de entorno.
+- El esquema base ya está en `supabase/schema.sql` y define usuarios, roles, aulas, horarios y reservas.
+- La app mantiene un modo demo seguro para no romper el flujo si no existe Supabase configurado.
+- La configuración ya contempla `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_DEMO_MODE`.
+- La siguiente acción real en producción es conectar el proyecto con un proyecto real de Supabase y revisar políticas RLS y usuarios de prueba.
+
 ## 4. Stack tecnológico
 - PHP 8.x
 - MySQL / MariaDB

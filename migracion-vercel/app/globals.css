@@ -34,9 +34,24 @@ body {
   color: var(--text);
   font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
   font-size: 16px;
+  line-height: 1.6;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select,
+textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease, filter 0.18s ease;
+}
+
+button:hover,
+input:hover,
+select:hover,
+textarea:hover {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.04);
 }
 
 body.drawer-open { overflow: hidden; }
@@ -86,21 +101,28 @@ button, input, select, textarea { font: inherit; }
   font-weight: 700;
 }
 
-.brand-mark span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--primary), #4d8df8);
-  color: white;
-  font-size: 0.86rem;
+.brand-mark-image {
+  min-height: 42px;
 }
 
 .brand-mark strong {
   font-size: 0.82rem;
   letter-spacing: -0.02em;
+}
+
+.institutional-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.brand-mark .institutional-logo {
+  width: 38px;
+  height: 38px;
 }
 
 .main-nav {
@@ -253,8 +275,8 @@ button, input, select, textarea { font: inherit; }
 .visual-surface {
   min-height: 220px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(37, 99, 235, 0.7)),
-    url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80') center / cover no-repeat;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(29, 78, 216, 0.52)),
+    url('/fachada-institucion.jpg') center / cover no-repeat;
 }
 
 .metrics-section,
@@ -661,28 +683,31 @@ body {
   border-color: rgba(22, 163, 74, 0.12);
 }
 
-.brand-box span {
-  display: inline-flex;
-  align-items: center;
+.brand-box-copy {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1d4ed8, #2dd4bf);
-  color: #fff;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  font-size: 1rem;
+  min-width: 0;
 }
 
-.role-sidebar.profesor .brand-box span {
-  background: linear-gradient(135deg, #16a34a, #22c55e);
+.brand-box .institutional-logo {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
 }
 
 .brand-box strong {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   letter-spacing: -0.04em;
   color: #0f172a;
+  line-height: 1.15;
+}
+
+.brand-box small {
+  color: var(--muted-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .sidebar-menu {
@@ -732,6 +757,27 @@ body {
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   padding-top: 1rem;
   cursor: pointer;
+}
+
+.sidebar-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.8rem 0.5rem 0.1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  color: var(--muted-soft);
+}
+
+.sidebar-legal strong {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.sidebar-legal span {
+  font-size: 0.68rem;
+  line-height: 1.5;
 }
 
 .logout-modal-backdrop {
@@ -1402,6 +1448,14 @@ body {
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(29, 78, 216, 0.18);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.ghost-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
 }
 
 .secondary-button,
@@ -1410,6 +1464,7 @@ body {
   padding: 0.65rem 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .secondary-button {
@@ -1619,6 +1674,16 @@ body {
 .status.pendiente {
   background: #fef3c7;
   color: #92400e;
+}
+
+.status.rechazada {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status.cancelada {
+  background: #e2e8f0;
+  color: #475569;
 }
 
 @media (max-width: 900px) {

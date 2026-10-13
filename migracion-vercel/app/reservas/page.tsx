@@ -5,6 +5,7 @@ import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { appendAuditEntry, validateAcademicReservation } from "@/lib/academic-rules";
 
 type ReservaRecord = {
   id_reserva: number;
@@ -92,6 +93,16 @@ export default function ReservasPage() {
   const currentUserId = typeof window !== "undefined" ? Number(localStorage.getItem("session-user-id") ?? 0) : 0;
   const isAdmin = role === "Superadministrador";
   const currentUser = usuarios.find((usuario) => Number(usuario.id_usuario) === Number(currentUserId));
+  const currentUserName = currentUser
+    ? `${currentUser.nombre ?? ""} ${currentUser.apellido ?? ""}`.trim()
+    : (typeof window !== "undefined" ? localStorage.getItem("session-name") : null) || "Profesor";
+
+  const professorUsuarios = useMemo(() => {
+    return usuarios.filter((usuario) => {
+      const roleName = usuario.roles?.nombre_rol ?? (Number(usuario.id_rol) === 1 ? "Superadministrador" : "Profesor");
+      return roleName === "Profesor";
+    });
+  }, [usuarios]);
 
   const normalizeText = (value: string | null | undefined) =>
     (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -114,7 +125,7 @@ export default function ReservasPage() {
       ];
       const finalReservas = (savedReservas?.length ? savedReservas : fallbackLocalData).filter((reserva) => {
         if (currentRole === "Superadministrador") return true;
-        return Number(reserva.id_usuario) === Number(currentUserIdFromStorage);
+        return Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada";
       });
       localStorage.setItem("demo-usuarios", JSON.stringify(finalUsuarios));
       localStorage.setItem("demo-aulas", JSON.stringify(finalAulas));
@@ -126,9 +137,7 @@ export default function ReservasPage() {
     }
 
     try {
-      const reservasQuery = currentRole === "Superadministrador"
-        ? supabase.from("reservas").select("*, usuarios(nombre, apellido, email), aulas(codigo_aula, nombre_aula)").order("fecha_reserva", { ascending: false })
-        : supabase.from("reservas").select("*, usuarios(nombre, apellido, email), aulas(codigo_aula, nombre_aula)").eq("id_usuario", Number(currentUserIdFromStorage)).order("fecha_reserva", { ascending: false });
+      const reservasQuery = supabase.from("reservas").select("*, usuarios(nombre, apellido, email), aulas(codigo_aula, nombre_aula)").order("fecha_reserva", { ascending: false });
 
       const [usuariosResult, aulasResult, reservasResult] = await Promise.all([
         supabase.from("usuarios").select("*").order("nombre", { ascending: true }),
@@ -151,7 +160,7 @@ export default function ReservasPage() {
       const nextReservas = (reservasResult.data as ReservaRecord[] | null)?.length ? (reservasResult.data as ReservaRecord[]) : fallbackLocalData;
       const visibleReservas = currentRole === "Superadministrador"
         ? nextReservas
-        : nextReservas.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage));
+        : nextReservas.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada");
 
       localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
       localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
@@ -171,7 +180,7 @@ export default function ReservasPage() {
       const fallbackData = savedReservas?.length ? savedReservas : fallbackLocalData;
       const visibleFallback = currentRole === "Superadministrador"
         ? fallbackData
-        : fallbackData.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage));
+        : fallbackData.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada");
       localStorage.setItem("demo-usuarios", JSON.stringify(fallbackUsuariosData));
       localStorage.setItem("demo-aulas", JSON.stringify(fallbackAulasData));
       localStorage.setItem("demo-reservas", JSON.stringify(visibleFallback));
@@ -199,13 +208,13 @@ export default function ReservasPage() {
   }, [router]);
 
   const visibleUsuarios = useMemo(() => {
-    if (isAdmin) return usuarios;
+    if (isAdmin) return professorUsuarios;
     return usuarios.filter((usuario) => Number(usuario.id_usuario) === Number(currentUserId));
-  }, [usuarios, isAdmin, currentUserId]);
+  }, [usuarios, isAdmin, currentUserId, professorUsuarios]);
 
   const visibleReservas = useMemo(() => {
     if (isAdmin) return reservas;
-    return reservas.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserId));
+    return reservas.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserId) || reserva.estado === "Aprobada");
   }, [reservas, isAdmin, currentUserId]);
 
   const filteredReservas = useMemo(() => {
@@ -226,6 +235,11 @@ export default function ReservasPage() {
     });
   }, [visibleReservas, search]);
 
+  const getCurrentUserLabel = () => {
+    const userName = currentUserName || "Profesor";
+    return userName.trim() || "Profesor";
+  };
+
   const handleChange = (field: keyof FormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
@@ -236,6 +250,8 @@ export default function ReservasPage() {
 
     const resolvedUserId = isAdmin ? Number(form.id_usuario) : Number(currentUserId || form.id_usuario || 0);
 
+    const finalEstado = isAdmin ? form.estado : "Pendiente";
+
     const payload = {
       id_usuario: resolvedUserId,
       id_aula: Number(form.id_aula),
@@ -243,7 +259,7 @@ export default function ReservasPage() {
       hora_inicio: form.hora_inicio,
       hora_fin: form.hora_fin,
       motivo: form.motivo,
-      estado: form.estado,
+      estado: finalEstado,
     };
 
     try {
@@ -251,14 +267,49 @@ export default function ReservasPage() {
         throw new Error("Debes seleccionar una aula y un usuario válido.");
       }
 
-      if (!supabase) {
-        const existing = JSON.parse(localStorage.getItem("demo-reservas") ?? "[]") as ReservaRecord[];
-        const updated = form.id_reserva
-          ? existing.map((item) => (item.id_reserva === form.id_reserva ? { ...item, ...payload, id_reserva: item.id_reserva } : item))
-          : [{ ...payload, id_reserva: Date.now(), usuarios: currentUser ?? { nombre: "Docente", apellido: "Registrado", email: "" }, aulas: { codigo_aula: "Aula", nombre_aula: "Aula" } }, ...existing];
+      const existingReservas = JSON.parse(localStorage.getItem("demo-reservas") ?? "[]") as ReservaRecord[];
+      const validation = validateAcademicReservation({
+        reservations: existingReservas.length ? existingReservas : reservas,
+        selectedUserId: resolvedUserId,
+        selectedAulaId: Number(form.id_aula),
+        fecha: form.fecha,
+        horaInicio: form.hora_inicio,
+        horaFin: form.hora_fin,
+        currentReservationId: form.id_reserva ?? undefined,
+      });
 
-        localStorage.setItem("demo-reservas", JSON.stringify(updated.filter((item) => isAdmin || Number(item.id_usuario) === Number(currentUserId))));
-        setReservas(updated.filter((item) => isAdmin || Number(item.id_usuario) === Number(currentUserId)));
+      if (!validation.valid) {
+        setMessage(validation.message);
+        setSaving(false);
+        return;
+      }
+
+      if (!supabase) {
+        const selectedUser = usuarios.find((usuario) => Number(usuario.id_usuario) === Number(resolvedUserId)) ?? currentUser ?? null;
+        const updated: ReservaRecord[] = form.id_reserva
+          ? existingReservas.map((item) => (item.id_reserva === form.id_reserva ? { ...item, ...payload, id_reserva: item.id_reserva, estado: finalEstado } : item))
+          : [{
+              ...payload,
+              id_reserva: Date.now(),
+              usuarios: selectedUser
+                ? { nombre: selectedUser.nombre ?? "", apellido: selectedUser.apellido ?? "", email: selectedUser.email ?? "" }
+                : { nombre: "Docente", apellido: "Registrado", email: "" },
+              aulas: { codigo_aula: "Aula", nombre_aula: "Aula" },
+            } as ReservaRecord, ...existingReservas];
+
+        const nextReservas = updated.filter((item) => isAdmin || Number(item.id_usuario) === Number(currentUserId));
+        localStorage.setItem("demo-reservas", JSON.stringify(nextReservas));
+        appendAuditEntry({
+          action: form.id_reserva ? "Actualización de reserva" : "Creación de reserva",
+          summary: `Reserva ${form.id_reserva ? "actualizada" : "creada"} para ${selectedUser ? `${selectedUser.nombre} ${selectedUser.apellido}`.trim() : getCurrentUserLabel()} en ${form.fecha} de ${form.hora_inicio} a ${form.hora_fin}`,
+          userName: selectedUser ? `${selectedUser.nombre ?? ""} ${selectedUser.apellido ?? ""}`.trim() : getCurrentUserLabel(),
+          userId: resolvedUserId,
+          state: finalEstado,
+          role: role ?? "Profesor",
+          date: new Date().toISOString(),
+        });
+        setReservas(nextReservas);
+        window.dispatchEvent(new Event("reservas-updated"));
       } else {
         if (form.id_reserva) {
           const { error } = await supabase.from("reservas").update(payload).eq("id_reserva", form.id_reserva);
@@ -267,7 +318,17 @@ export default function ReservasPage() {
           const { error } = await supabase.from("reservas").insert(payload);
           if (error) throw error;
         }
+        appendAuditEntry({
+          action: form.id_reserva ? "Actualización de reserva" : "Creación de reserva",
+          summary: `Reserva ${form.id_reserva ? "actualizada" : "creada"} para ${getCurrentUserLabel()} en ${form.fecha} de ${form.hora_inicio} a ${form.hora_fin}`,
+          userName: getCurrentUserLabel(),
+          userId: resolvedUserId,
+          state: finalEstado,
+          role: role ?? "Profesor",
+          date: new Date().toISOString(),
+        });
         await loadData();
+        window.dispatchEvent(new Event("reservas-updated"));
       }
 
       setMessage(form.id_reserva ? "Reserva actualizada correctamente." : "Reserva registrada correctamente.");
@@ -341,7 +402,7 @@ export default function ReservasPage() {
               ) : (
                 <label>
                   Usuario
-                  <input value={currentUser ? `${currentUser.nombre} ${currentUser.apellido}` : "Profesor"} readOnly />
+                  <input value={currentUserName} readOnly />
                 </label>
               )}
 
@@ -374,12 +435,16 @@ export default function ReservasPage() {
 
               <label>
                 Estado
-                <select value={form.estado} onChange={(event) => handleChange("estado", event.target.value)}>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Aprobada">Aprobada</option>
-                  <option value="Rechazada">Rechazada</option>
-                  <option value="Cancelada">Cancelada</option>
-                </select>
+                {isAdmin ? (
+                  <select value={form.estado} onChange={(event) => handleChange("estado", event.target.value)}>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Aprobada">Aprobada</option>
+                    <option value="Rechazada">Rechazada</option>
+                    <option value="Cancelada">Cancelada</option>
+                  </select>
+                ) : (
+                  <input value={form.estado || "Pendiente"} readOnly />
+                )}
               </label>
 
               <label className="full-width">
