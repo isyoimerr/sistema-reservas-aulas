@@ -200,12 +200,6 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="demo-accounts">
-            <strong>Cuentas de prueba</strong>
-            <span>admin@sistema.com / admin123</span>
-            <span>profesor@sistema.com / profesor123</span>
-          </div>
-
           <Link href="/" className="text-link">
             Volver al inicio
           </Link>
