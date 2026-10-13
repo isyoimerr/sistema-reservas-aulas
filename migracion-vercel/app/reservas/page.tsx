@@ -302,7 +302,7 @@ export default function ReservasPage() {
         <header className="topbar">
           <div>
             <p className="eyebrow">Gestión</p>
-            <h1>Reservas</h1>
+            <h1>{isAdmin ? "Reservas" : "Mis reservas"}</h1>
           </div>
           <button className="primary-button" type="button" onClick={() => setForm(emptyForm)}>
             Nueva solicitud

@@ -176,6 +176,22 @@ export default function LoginPage() {
 
           <button type="submit">Entrar</button>
 
+          <div className="auth-links">
+            <Link
+              href="#"
+              className="text-link"
+              onClick={(event) => {
+                event.preventDefault();
+                setError("Recuperación de contraseña no habilitada en este momento. Habla con el administrador.");
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+            <Link href="/registro" className="text-link">
+              ¿No tienes una cuenta? Regístrate
+            </Link>
+          </div>
+
           <div className="demo-accounts">
             <strong>Cuentas de prueba</strong>
             <span>admin@sistema.com / admin123</span>

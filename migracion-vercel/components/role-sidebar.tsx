@@ -16,12 +16,7 @@ const adminMenu = [
 ];
 
 const professorMenu = [
-  { label: "Home", href: "/dashboard" },
-  { label: "Dashboard", href: "/dashboard" },
   { label: "Mis reservas", href: "/reservas" },
-  { label: "Reservas", href: "/reservas" },
-  { label: "Horarios", href: "/horarios" },
-  { label: "Perfil", href: "/perfil" },
 ];
 
 export default function RoleSidebar() {
