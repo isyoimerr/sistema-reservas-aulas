@@ -33,11 +33,15 @@ const ensureDemoUsers = async () => {
   ];
 
   for (const account of seedAccounts) {
-    const { data: existing } = await supabase
+    const { data: existing, error } = await supabase
       .from("usuarios")
       .select("id_usuario, password")
       .eq("email", account.email)
       .maybeSingle();
+
+    if (error) {
+      continue;
+    }
 
     if (!existing) {
       await supabase.from("usuarios").insert(account);
@@ -48,6 +52,22 @@ const ensureDemoUsers = async () => {
       await supabase.from("usuarios").update({ password: account.password }).eq("email", account.email);
     }
   }
+};
+
+const authenticateDemoUser = (normalizedEmail: string, password: string) => {
+  const storedUsers = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, any>>;
+  const account = demoAccounts[normalizedEmail as keyof typeof demoAccounts];
+  const match = storedUsers.find((user) => user.email?.toLowerCase() === normalizedEmail) ?? account;
+
+  if (!match || (match.password ?? "") !== password) {
+    return null;
+  }
+
+  return {
+    id_usuario: Number((match as Record<string, unknown>).id_usuario ?? account?.id_usuario ?? 2),
+    role: match.role ?? "Profesor",
+    email: normalizedEmail,
+  };
 };
 
 export default function LoginPage() {
@@ -73,54 +93,45 @@ export default function LoginPage() {
     }
 
     if (supabase) {
-      const { data, error: dbError } = await supabase
-        .from("usuarios")
-        .select("id_usuario, nombre, apellido, email, password, id_rol")
-        .eq("email", normalizedEmail)
-        .maybeSingle();
+      try {
+        const { data, error: dbError } = await supabase
+          .from("usuarios")
+          .select("id_usuario, nombre, apellido, email, password, id_rol")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
 
-      if (dbError) {
-        setError("No se pudo validar la cuenta en Supabase.");
-        return;
+        if (!dbError && data && data.password === password) {
+          const role = getRoleName(data.id_rol);
+          localStorage.setItem("session-role", role);
+          localStorage.setItem("session-email", normalizedEmail);
+          localStorage.setItem("session-user-id", String(data.id_usuario));
+          setError("");
+
+          if (role === "Superadministrador") {
+            router.push("/admin");
+            return;
+          }
+
+          router.push("/dashboard");
+          return;
+        }
+      } catch {
+        // Si Supabase falla, dejamos caer al modo demo/local para que no bloquee siempre el login.
       }
+    }
 
-      if (!data || data.password !== password) {
-        setError("Credenciales inválidas. Prueba admin@sistema.com / admin123 o crea una cuenta nueva.");
-        return;
-      }
-
-      const role = getRoleName(data.id_rol);
-      localStorage.setItem("session-role", role);
-      localStorage.setItem("session-email", normalizedEmail);
-      localStorage.setItem("session-user-id", String(data.id_usuario));
-      setError("");
-
-      if (role === "Superadministrador") {
-        router.push("/admin");
-        return;
-      }
-
-      router.push("/dashboard");
+    const demoUser = authenticateDemoUser(normalizedEmail, password);
+    if (!demoUser) {
+      setError("Credenciales inválidas. Prueba admin@sistema.com / admin123 o profesor@sistema.com / profesor123.");
       return;
     }
 
-    const storedUsers = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, any>>;
-    const registeredUser = storedUsers.find((user) => user.email?.toLowerCase() === normalizedEmail);
-    const account = demoAccounts[normalizedEmail as keyof typeof demoAccounts];
-    const match = registeredUser ?? account;
-
-    if (!match || (match.password ?? "") !== password) {
-      setError("Credenciales inválidas. Prueba admin@sistema.com / admin123 o crea una cuenta nueva.");
-      return;
-    }
-
-    const resolvedUserId = Number((match as Record<string, unknown>).id_usuario ?? account?.id_usuario ?? 2);
-    localStorage.setItem("session-role", match.role ?? "Profesor");
-    localStorage.setItem("session-email", normalizedEmail);
-    localStorage.setItem("session-user-id", String(resolvedUserId));
+    localStorage.setItem("session-role", demoUser.role);
+    localStorage.setItem("session-email", demoUser.email);
+    localStorage.setItem("session-user-id", String(demoUser.id_usuario));
     setError("");
 
-    if (match.role === "Superadministrador") {
+    if (demoUser.role === "Superadministrador") {
       router.push("/admin");
       return;
     }
