@@ -9,7 +9,8 @@ CREATE TYPE reserva_estado AS ENUM ('Pendiente', 'Aprobada', 'Rechazada', 'Cance
 
 CREATE TABLE roles (
     id_rol INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre_rol VARCHAR(50) NOT NULL UNIQUE
+    nombre_rol VARCHAR(50) NOT NULL UNIQUE,
+    CONSTRAINT chk_roles_nombre CHECK (nombre_rol IN ('Superadministrador', 'Profesor'))
 );
 
 CREATE TABLE usuarios (
@@ -21,7 +22,8 @@ CREATE TABLE usuarios (
     id_rol INT NOT NULL,
     estado usuario_estado DEFAULT 'Activo',
     fecha_creacion TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON UPDATE CASCADE
+    CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON UPDATE CASCADE,
+    CONSTRAINT chk_usuarios_rol CHECK (id_rol IN (1, 2))
 );
 
 CREATE TABLE aulas (
@@ -100,26 +102,46 @@ ALTER TABLE reservas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE historial_reservas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bitacora_actividad ENABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION public.user_has_role(_role_name text)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.current_user_id()
+RETURNS integer
+LANGUAGE sql
 STABLE
 AS $$
-BEGIN
-    RETURN EXISTS (
+    SELECT u.id_usuario
+    FROM public.usuarios u
+    WHERE lower(u.email) = lower(COALESCE(auth.email(), ''))
+    LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.current_user_role_name()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT r.nombre_rol
+    FROM public.usuarios u
+    INNER JOIN public.roles r ON r.id_rol = u.id_rol
+    WHERE u.id_usuario = public.current_user_id()
+    LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_has_role(_role_name text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT EXISTS (
         SELECT 1
         FROM public.usuarios u
         INNER JOIN public.roles r ON r.id_rol = u.id_rol
-        WHERE lower(COALESCE(u.email, '')) = lower(COALESCE(auth.email(), ''))
+        WHERE u.id_usuario = public.current_user_id()
           AND lower(r.nombre_rol) = lower(_role_name)
     );
-END;
 $$;
 
 CREATE POLICY "roles_select_public" ON roles FOR SELECT USING (true);
 CREATE POLICY "usuarios_select_own_or_admin" ON usuarios FOR SELECT USING (
-    lower(COALESCE(email, '')) = lower(COALESCE(auth.email(), ''))
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "usuarios_insert_admin_only" ON usuarios FOR INSERT WITH CHECK (user_has_role('Superadministrador'));
@@ -129,43 +151,43 @@ CREATE POLICY "aulas_insert_admin_only" ON aulas FOR INSERT WITH CHECK (user_has
 CREATE POLICY "aulas_update_admin_only" ON aulas FOR UPDATE USING (user_has_role('Superadministrador')) WITH CHECK (user_has_role('Superadministrador'));
 CREATE POLICY "aulas_delete_admin_only" ON aulas FOR DELETE USING (user_has_role('Superadministrador'));
 CREATE POLICY "horarios_select_own_or_admin" ON horarios_docentes FOR SELECT USING (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 );
-CREATE POLICY "horarios_manage_own_or_admin" ON horarios_docentes FOR INSERT WITH CHECK (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+CREATE POLICY "horarios_insert_own_or_admin" ON horarios_docentes FOR INSERT WITH CHECK (
+    (id_usuario = public.current_user_id() AND user_has_role('Profesor'))
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "horarios_update_own_or_admin" ON horarios_docentes FOR UPDATE USING (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 ) WITH CHECK (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    (id_usuario = public.current_user_id() AND user_has_role('Profesor'))
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "reservas_select_own_or_admin" ON reservas FOR SELECT USING (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "reservas_insert_own_or_admin" ON reservas FOR INSERT WITH CHECK (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    (id_usuario = public.current_user_id() AND user_has_role('Profesor'))
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "reservas_update_own_or_admin" ON reservas FOR UPDATE USING (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 ) WITH CHECK (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    (id_usuario = public.current_user_id() AND user_has_role('Profesor'))
     OR user_has_role('Superadministrador')
 );
 CREATE POLICY "historial_select_admin_only" ON historial_reservas FOR SELECT USING (user_has_role('Superadministrador'));
 CREATE POLICY "historial_insert_admin_or_owner" ON historial_reservas FOR INSERT WITH CHECK (
     user_has_role('Superadministrador')
-    OR id_usuario_accion = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    OR id_usuario_accion = public.current_user_id()
 );
 CREATE POLICY "bitacora_select_admin_only" ON bitacora_actividad FOR SELECT USING (user_has_role('Superadministrador'));
 CREATE POLICY "bitacora_insert_own_or_admin" ON bitacora_actividad FOR INSERT WITH CHECK (
-    id_usuario = (SELECT u.id_usuario FROM public.usuarios u WHERE lower(u.email) = lower(COALESCE(auth.email(), '')) LIMIT 1)
+    id_usuario = public.current_user_id()
     OR user_has_role('Superadministrador')
 );
 

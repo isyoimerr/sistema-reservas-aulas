@@ -128,6 +128,10 @@ export default function HorariosPage() {
   const [aulas, setAulas] = useState<Array<Record<string, any>>>([]);
   const [search, setSearch] = useState("");
   const [selectedProfessorId, setSelectedProfessorId] = useState<string>("");
+  const role = typeof window !== "undefined" ? localStorage.getItem("session-role") : "Profesor";
+  const currentUserId = typeof window !== "undefined" ? Number(localStorage.getItem("session-user-id") ?? 0) : 0;
+  const isAdmin = role === "Superadministrador";
+  const currentUser = usuarios.find((usuario) => Number(usuario.id_usuario) === Number(currentUserId));
   const [form, setForm] = useState<FormState>(emptyForm);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -139,6 +143,8 @@ export default function HorariosPage() {
     const savedHorarios = getLocalStorageJson<HorarioRecord[]>("demo-horarios");
     const savedUsuarios = getLocalStorageJson<Array<Record<string, any>>>("demo-usuarios");
     const savedAulas = getLocalStorageJson<Array<Record<string, any>>>("demo-aulas");
+    const currentRole = localStorage.getItem("session-role") ?? "Profesor";
+    const currentUserIdFromStorage = Number(localStorage.getItem("session-user-id") ?? 0);
 
     if (!supabase) {
       const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [
@@ -150,22 +156,29 @@ export default function HorariosPage() {
         { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
         { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
       ];
-      const finalHorarios = savedHorarios?.length ? savedHorarios : fallbackHorarios;
+      const finalHorarios = (savedHorarios?.length ? savedHorarios : fallbackHorarios).filter((horario) => {
+        if (currentRole === "Superadministrador") return true;
+        return Number(horario.id_usuario) === Number(currentUserIdFromStorage);
+      });
       localStorage.setItem("demo-usuarios", JSON.stringify(finalUsuarios));
       localStorage.setItem("demo-aulas", JSON.stringify(finalAulas));
       localStorage.setItem("demo-horarios", JSON.stringify(finalHorarios));
       setUsuarios(finalUsuarios);
       setAulas(finalAulas);
       setHorarios(finalHorarios);
-      setSelectedProfessorId("");
+      setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
       return;
     }
 
     try {
+      const horariosQuery = currentRole === "Superadministrador"
+        ? supabase.from("horarios_docentes").select("*, usuarios(nombre, apellido, email), aulas(nombre_aula, codigo_aula)").order("dia_semana", { ascending: true })
+        : supabase.from("horarios_docentes").select("*, usuarios(nombre, apellido, email), aulas(nombre_aula, codigo_aula)").eq("id_usuario", Number(currentUserIdFromStorage)).order("dia_semana", { ascending: true });
+
       const [usuariosResult, aulasResult, horariosResult] = await Promise.all([
         supabase.from("usuarios").select("*").order("nombre", { ascending: true }),
         supabase.from("aulas").select("*").order("nombre_aula", { ascending: true }),
-        supabase.from("horarios_docentes").select("*, usuarios(nombre, apellido, email), aulas(nombre_aula, codigo_aula)").order("dia_semana", { ascending: true }),
+        horariosQuery,
       ]);
 
       if (usuariosResult.error || aulasResult.error || horariosResult.error) {
@@ -182,14 +195,17 @@ export default function HorariosPage() {
         { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
       ];
       const nextHorarios = (horariosResult.data as HorarioRecord[] | null)?.length ? (horariosResult.data as HorarioRecord[]) : fallbackHorarios;
+      const visibleHorarios = currentRole === "Superadministrador"
+        ? nextHorarios
+        : nextHorarios.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
 
       localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
       localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
-      localStorage.setItem("demo-horarios", JSON.stringify(nextHorarios));
+      localStorage.setItem("demo-horarios", JSON.stringify(visibleHorarios));
       setUsuarios(nextUsuarios);
       setAulas(nextAulas);
-      setHorarios(nextHorarios);
-      setSelectedProfessorId("");
+      setHorarios(visibleHorarios);
+      setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
     } catch (error) {
       const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [
         { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
@@ -201,13 +217,16 @@ export default function HorariosPage() {
         { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
       ];
       const fallbackData = savedHorarios?.length ? savedHorarios : fallbackHorarios;
+      const visibleFallback = currentRole === "Superadministrador"
+        ? fallbackData
+        : fallbackData.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
       localStorage.setItem("demo-usuarios", JSON.stringify(fallbackUsuariosData));
       localStorage.setItem("demo-aulas", JSON.stringify(fallbackAulasData));
-      localStorage.setItem("demo-horarios", JSON.stringify(fallbackData));
+      localStorage.setItem("demo-horarios", JSON.stringify(visibleFallback));
       setUsuarios(fallbackUsuariosData);
       setAulas(fallbackAulasData);
-      setHorarios(fallbackData);
-      setSelectedProfessorId("");
+      setHorarios(visibleFallback);
+      setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
       console.warn("Fallo en Supabase para horarios, usando datos demo.", error);
     }
   };
@@ -216,11 +235,16 @@ export default function HorariosPage() {
     loadData();
   }, []);
 
+  const visibleHorarios = useMemo(() => {
+    if (isAdmin) return horarios;
+    return horarios.filter((horario) => Number(horario.id_usuario) === Number(currentUserId));
+  }, [horarios, isAdmin, currentUserId]);
+
   const filtered = useMemo(() => {
     const query = normalizeText(search);
-    if (!query) return horarios;
+    if (!query) return visibleHorarios;
 
-    return horarios.filter((horario) => {
+    return visibleHorarios.filter((horario) => {
       const haystack = [
         horario.dia_semana,
         horario.usuarios?.nombre ?? "",
@@ -230,12 +254,12 @@ export default function HorariosPage() {
       ].join(" ");
       return normalizeText(haystack).includes(query);
     });
-  }, [horarios, search]);
+  }, [visibleHorarios, search]);
 
   const teacherSchedule = useMemo(() => {
     if (!selectedProfessorId) return [];
-    return horarios.filter((horario) => Number(horario.id_usuario) === Number(selectedProfessorId));
-  }, [horarios, selectedProfessorId]);
+    return visibleHorarios.filter((horario) => Number(horario.id_usuario) === Number(selectedProfessorId));
+  }, [visibleHorarios, selectedProfessorId]);
 
   const hydrateFormFromExtracted = (items: HorarioPayload[]) => {
     if (!items.length) return;
@@ -405,7 +429,7 @@ export default function HorariosPage() {
     event.preventDefault();
     setSaving(true);
 
-    const resolvedIdUsuario = Number(form.id_usuario) || Number(usuarios[0]?.id_usuario ?? 0);
+    const resolvedIdUsuario = isAdmin ? Number(form.id_usuario) || Number(usuarios[0]?.id_usuario ?? 0) : Number(currentUserId || form.id_usuario || usuarios[0]?.id_usuario || 0);
     const resolvedIdAula = Number(form.id_aula) || Number(aulas[0]?.id_aula ?? 0);
 
     const payload = {
@@ -431,8 +455,9 @@ export default function HorariosPage() {
         const updated = form.id_horario
           ? current.map((item) => (item.id_horario === form.id_horario ? { ...item, ...payload, id_horario: item.id_horario, usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido }, aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula } } : item))
           : [{ ...payload, id_horario: Date.now(), usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido }, aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula } }, ...current];
-        saveHorariosToLocal(updated);
-        setHorarios(updated);
+        const filteredUpdated = updated.filter((item) => isAdmin || Number(item.id_usuario) === Number(currentUserId));
+        saveHorariosToLocal(filteredUpdated);
+        setHorarios(filteredUpdated);
       } else {
         if (form.id_horario) {
           const { error } = await supabase.from("horarios_docentes").update(payload).eq("id_horario", form.id_horario);

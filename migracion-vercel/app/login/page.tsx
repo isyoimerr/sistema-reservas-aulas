@@ -7,8 +7,8 @@ import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 const demoAccounts = {
-  "admin@sistema.com": { role: "Superadministrador", password: "admin123" },
-  "profesor@sistema.com": { role: "Profesor", password: "profesor123" },
+  "admin@sistema.com": { id_usuario: 1, role: "Superadministrador", password: "admin123" },
+  "profesor@sistema.com": { id_usuario: 2, role: "Profesor", password: "profesor123" },
 };
 
 const getRoleName = (idRol: number | null | undefined) =>
@@ -19,8 +19,8 @@ const ensureDemoUsers = async () => {
     const stored = localStorage.getItem("demo-usuarios");
     if (!stored) {
       const seed = [
-        { nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com", password: "admin123", role: "Superadministrador" },
-        { nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com", password: "profesor123", role: "Profesor" },
+        { id_usuario: 1, nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com", password: "admin123", role: "Superadministrador" },
+        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com", password: "profesor123", role: "Profesor" },
       ];
       localStorage.setItem("demo-usuarios", JSON.stringify(seed));
     }
@@ -104,8 +104,8 @@ export default function LoginPage() {
       return;
     }
 
-    const storedUsers = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;
-    const registeredUser = storedUsers.find((user) => user.email.toLowerCase() === normalizedEmail);
+    const storedUsers = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, any>>;
+    const registeredUser = storedUsers.find((user) => user.email?.toLowerCase() === normalizedEmail);
     const account = demoAccounts[normalizedEmail as keyof typeof demoAccounts];
     const match = registeredUser ?? account;
 
@@ -114,8 +114,10 @@ export default function LoginPage() {
       return;
     }
 
+    const resolvedUserId = Number((match as Record<string, unknown>).id_usuario ?? account?.id_usuario ?? 2);
     localStorage.setItem("session-role", match.role ?? "Profesor");
     localStorage.setItem("session-email", normalizedEmail);
+    localStorage.setItem("session-user-id", String(resolvedUserId));
     setError("");
 
     if (match.role === "Superadministrador") {

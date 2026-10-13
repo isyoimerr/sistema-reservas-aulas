@@ -3,13 +3,19 @@ export const PROFESSOR_ROLE = "Profesor";
 
 export function getSessionState() {
   if (typeof window === "undefined") {
-    return { role: null, email: "" };
+    return { role: null, email: "", userId: null };
   }
 
   return {
     role: localStorage.getItem("session-role"),
     email: (localStorage.getItem("session-email") ?? "").trim().toLowerCase(),
+    userId: localStorage.getItem("session-user-id"),
   };
+}
+
+export function getSessionUserId() {
+  const { userId } = getSessionState();
+  return userId ? Number(userId) : null;
 }
 
 export function isAdminSession() {
