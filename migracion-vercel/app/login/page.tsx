@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { isAdminSession, isProfessorSession } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseStatus, supabase } from "@/lib/supabase";
 
 const demoAccounts = {
   "admin@sistema.com": { id_usuario: 1, role: "Superadministrador", password: "admin123" },
@@ -80,6 +80,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("admin@sistema.com");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
+  const supabaseStatus = getSupabaseStatus();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -157,6 +158,12 @@ export default function LoginPage() {
             Sistema de gestión de aulas y reservas para docentes y personal administrativo.
           </p>
         </div>
+
+        {!supabaseStatus.enabled ? (
+          <div className="demo-banner" role="status" aria-live="polite">
+            {supabaseStatus.message}
+          </div>
+        ) : null}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <h2>Iniciar sesión</h2>

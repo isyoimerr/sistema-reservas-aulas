@@ -4,7 +4,7 @@ import RoleSidebar from "@/components/role-sidebar";
 import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseStatus, supabase } from "@/lib/supabase";
 import { appendAuditEntry, validateAcademicReservation } from "@/lib/academic-rules";
 
 type ReservaRecord = {
@@ -88,6 +88,7 @@ export default function ReservasPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const supabaseStatus = getSupabaseStatus();
 
   const role = typeof window !== "undefined" ? localStorage.getItem("session-role") : "Profesor";
   const currentUserId = typeof window !== "undefined" ? Number(localStorage.getItem("session-user-id") ?? 0) : 0;
@@ -369,6 +370,12 @@ export default function ReservasPage() {
             Nueva solicitud
           </button>
         </header>
+
+        {!supabaseStatus.enabled ? (
+          <div className="demo-banner" role="status" aria-live="polite">
+            {supabaseStatus.message}
+          </div>
+        ) : null}
 
         <div className="reservas-controls">
           <div className="search-box">

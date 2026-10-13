@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseStatus, supabase } from "@/lib/supabase";
 
 type FormData = {
   nombre: string;
@@ -24,6 +24,7 @@ export default function RegistroPage() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const supabaseStatus = getSupabaseStatus();
 
   const handleChange = (field: keyof FormData, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -148,9 +149,15 @@ export default function RegistroPage() {
           <p className="eyebrow">Nueva cuenta</p>
           <h1>Registra a un docente</h1>
           <p>
-            Completa la información para crear una cuenta institucional y guardarla en Supabase.
+            Completa la información para crear una cuenta institucional y guardarla en la base real cuando Supabase esté configurado.
           </p>
         </div>
+
+        {!supabaseStatus.enabled ? (
+          <div className="demo-banner" role="status" aria-live="polite">
+            {supabaseStatus.message}
+          </div>
+        ) : null}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <h2>Registro</h2>
