@@ -1,124 +1,118 @@
-# Sistema de Reservas de Aulas
+# Sistema de reservas de aulas
 
-> Proyecto de grado para la gestión institucional de aulas, horarios, usuarios y reservas académicas.
-
-<p align="center">
-  <img src="img/Laboratorio%20escolar%20de%20programaci%C3%B3n.png" alt="Portada del sistema de reservas de aulas" width="100%" />
-</p>
+> Proyecto académico orientado a la gestión institucional de reservas, horarios, usuarios y control operativo de aulas.
 
 <p align="center">
-  <img alt="PHP" src="https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white" />
-  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" />
-  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white" />
-  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white" />
-  <img alt="Proyecto de grado" src="https://img.shields.io/badge/Proyecto%20de%20grado-Universidad-0EA5E9?style=flat-square" />
+  <img src="https://img.shields.io/badge/Proyecto%20de%20grado-Sistema%20institucional-0EA5E9?style=for-the-badge" alt="Proyecto de grado" />
+  <img src="https://img.shields.io/badge/Stack-Next.js%20%2B%20Supabase-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js + Supabase" />
+  <img src="https://img.shields.io/badge/Frontend-React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Backend-PHP%20%2B%20MySQL-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP + MySQL" />
 </p>
 
-## 🌐 Demo / prototipo
+## 🌐 Demo
 
-La versión en línea del prototipo queda disponible aquí:
+La versión funcional del sistema está disponible en:
 
 **https://sistema-reservas-aulas-fkhm.vercel.app/login**
 
-> Esta web es una vista de demostración del proyecto en desarrollo y no reemplaza la plataforma oficial institucional. Su propósito principal es mostrar el flujo funcional, la arquitectura del sistema y el avance del desarrollo del proyecto de grado.
+> Este prototipo permite visualizar la lógica de negocio, el flujo de autenticación, la gestión de reservas y los paneles por rol en un entorno web moderno.
 
-## 👋 Presentación del proyecto
+## 📌 Descripción del proyecto
 
-Hola, somos el equipo de desarrollo de este proyecto.
+Este repositorio presenta una solución para la gestión de reservas de aulas en una institución educativa. El objetivo es facilitar la administración del uso de los espacios académicos, reducir conflictos de horario y mejorar la organización del personal docente y administrativo.
 
-Este repositorio contiene una solución tecnológica desarrollada para la institución educativa **José Agustín Blanco Barros**, con el propósito de mejorar la administración del uso de aulas, horarios y reservas académicas.
+El sistema está pensado para ofrecer una experiencia clara y ordenada, con validaciones de disponibilidad, roles definidos por usuario y una estructura que permite escalar hacia un entorno institucional real.
 
-La idea central es digitalizar y organizar un proceso que, en muchos contextos institucionales, se maneja de forma manual o poco estructurada. Con esta herramienta buscamos reducir errores, mejorar la planificación académica y crear una experiencia más clara tanto para docentes como para personal administrativo.
+## 🎯 Problema que resuelve
 
-## 🏫 Institución educativa
-
-**Institución Educativa José Agustín Blanco Barros**
-
-Esta solución fue creada pensando en la realidad y necesidades de esta institución, con un enfoque práctico y orientado a la gestión académica diaria.
-
-## 🧠 ¿De qué trata el proyecto?
-
-El sistema permite gestionar de forma centralizada:
-
-- reservas de aulas,
-- horarios docentes,
-- usuarios con roles definidos,
-- aprobación y seguimiento de solicitudes,
-- administración académica y operativa,
-- reportes y control del uso de espacios.
-
-El objetivo es transformar un proceso manual y propenso a errores en una solución digital ordenada, segura y eficiente.
-
-## 🧑‍💻 ¿Quiénes lo desarrollaron?
-
-Este proyecto fue desarrollado como parte de un trabajo académico y de grado, con enfoque en la resolución de un problema real del entorno institucional.
-
-La intención no es presentar una solución comercial o una plataforma final institucional completa, sino una propuesta funcional, bien estructurada y preparada para mostrar el desarrollo realizado, la lógica aplicada y la arquitectura del sistema.
-
-## 🎯 ¿Cuál es el problema que resuelve?
-
-En la práctica, la gestión de aulas y reservas suele hacerse de manera manual o poco organizada, lo que puede causar:
+En muchos contextos académicos, la gestión de aulas se realiza de forma manual o poco estructurada, lo que puede generar:
 
 - conflictos de horario,
-- uso duplicado de una misma aula,
-- pérdida de tiempo en coordinación,
+- doble asignación de un mismo espacio,
 - dificultad para consultar disponibilidad,
-- poca trazabilidad de solicitudes.
+- demora en la coordinación entre docentes y administración,
+- poca trazabilidad en el seguimiento de solicitudes.
 
-Este sistema busca resolver esos inconvenientes desde una sola plataforma con validaciones y roles definidos.
+La solución centraliza la información y organiza la gestión desde una plataforma única.
 
 ## ✨ Funcionalidades principales
 
-- gestión de aulas y disponibilidad,
-- registro de usuarios y roles,
-- login con acceso diferenciado,
+- autenticación por roles, 
+- gestión de usuarios y permisos,
+- control de aulas y disponibilidad,
 - creación y validación de reservas,
-- revisión de conflictos de horario,
-- panel administrativo con métricas,
-- seguimiento de estados de solicitudes,
-- gestión de permisos por perfil,
-- flujo preparado para despliegue web institucional.
+- seguimiento del estado de solicitudes,
+- panel general para administración,
+- dashboard para docentes,
+- flujo preparado para despliegue web con Vercel + Supabase.
 
-## 🧩 Roles del sistema
+## 👥 Roles del sistema
 
 ### Superadministrador
-Puede gestionar usuarios, reservas, aulas, horarios y reportes.
+Puede gestionar usuarios, reservas, aulas, horarios y reportes del sistema.
 
 ### Profesor
-Puede consultar y registrar sus solicitudes de reserva, así como revisar la disponibilidad del sistema.
+Puede consultar disponibilidad, registrar solicitudes y revisar el estado de sus reservas.
 
 ## 🛠️ Stack tecnológico
 
+- PHP
+- MySQL
+- JavaScript
+- Bootstrap
+- React
+- Next.js
+- Supabase
+
+## 🧭 Flujo principal del sistema
+
+1. El usuario ingresa al sistema con sus credenciales.
+2. El sistema identifica su rol.
+3. Se muestra el panel correspondiente según el perfil.
+4. El docente registra una reserva con aula, fecha y horario.
+5. El sistema valida disponibilidad y el administrador revisa la solicitud.
+6. La solicitud cambia de estado y queda registrada en la plataforma.
+
+## 📸 Capturas del sistema
+
+### Login institucional
+
 <p align="center">
-  <img alt="PHP" src="https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white" />
-  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" />
-  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" />
-  <img alt="Bootstrap" src="https://img.shields.io/badge/Bootstrap-7952B3?style=flat-square&logo=bootstrap&logoColor=white" />
-  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white" />
-  <img alt="React" src="https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB" />
-  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white" />
+  <img src="docs/imagenes/login.jpeg" alt="Pantalla de login" width="900" />
 </p>
 
-## 📌 Cómo funciona el sistema
+### Landing / presentación inicial
 
-1. El usuario inicia sesión con sus credenciales.
-2. El sistema identifica su rol.
-3. Según su perfil, accede a las opciones disponibles.
-4. El usuario solicita o administra una reserva.
-5. El sistema valida horario, aula y disponibilidad académica.
-6. La reserva queda registrada y disponible para seguimiento administrativo.
+<p align="center">
+  <img src="docs/imagenes/landing%20pace.jpeg" alt="Landing page del sistema" width="900" />
+</p>
 
-## 📸 Capturas del proyecto
+### Panel administrador
 
-<div align="center">
-  <img src="img/Laboratorio%20escolar%20de%20programaci%C3%B3n.png" alt="Laboratorio de programación" width="420" />
-  <img src="img/Docente%20observa%20laboratorio%20de%20computaci%C3%B3n.png" alt="Docente observando laboratorio" width="420" />
-</div>
+<p align="center">
+  <img src="docs/imagenes/administrador.jpeg" alt="Panel administrativo" width="900" />
+</p>
+
+### Dashboard del profesor
+
+<p align="center">
+  <img src="docs/imagenes/profesor.jpeg" alt="Dashboard de profesor" width="900" />
+</p>
+
+### Gestión de reservas
+
+<p align="center">
+  <img src="docs/imagenes/reservas.jpeg" alt="Gestión de reservas" width="900" />
+</p>
 
 ## 📁 Estructura del repositorio
 
 ```text
 .
+├── DOC/
+│   └── fotos de como se ve/
+├── docs/
+│   └── imagenes/
 ├── admin/
 ├── aulas/
 ├── config/
@@ -134,65 +128,56 @@ Puede consultar y registrar sus solicitudes de reserva, así como revisar la dis
 ├── reservas/
 ├── supabase/
 ├── usuarios/
+├── README.md
+├── package.json
 ├── dashboard.php
 ├── index.php
-├── package.json
-├── README.md
 ├── run.bat
 ├── run.ps1
-└── .env.local
+├── .env.local
+└── .gitignore
 ```
 
-## ⚙️ Requisitos del proyecto
+## ⚙️ Instalación y ejecución
 
-- PHP 8 o superior
-- MySQL / MariaDB
-- Navegador moderno
-- Entorno local o institucional con acceso a la base de datos
-- Variables de entorno configuradas para Supabase
+### Requisitos
 
-## 🔐 Configuración
+- Node.js
+- npm
+- PHP
+- MySQL o MariaDB
+- navegador moderno
 
-El proyecto usa variables de entorno para conectarse con Supabase. En la versión web migrada se deben definir correctamente:
+### Ejecutar localmente
+
+```bash
+npm install
+npm run dev
+```
+
+### Configuración de entorno
+
+En la versión web migrada se usan variables de entorno para Supabase:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=tu_url_del_proyecto
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
 ```
 
-> No se comparten claves ni credenciales aquí. La configuración real debe mantenerse en el entorno de despliegue y seguridad correspondiente.
+> Las credenciales reales deben mantenerse en el entorno de despliegue y no deben compartirse en el repositorio.
 
 ## 🚀 Estado del proyecto
 
-El sistema se encuentra actualmente en una etapa de prototipo funcional y consolidación para uso institucional. La solución incluye:
-
-- autenticación por roles,
-- administración de reservas,
-- control de aulas y docentes,
-- panel administrativo,
-- migración moderna a Next.js,
-- preparación para despliegue web institucional.
-
-> Este proyecto es un prototipo de desarrollo para mostrar la lógica del sistema, la propuesta de solución y el avance académico. No sustituye la plataforma oficial institucional ni la operación final de la institución.
-
-## 📈 Impacto institucional
-
-Este proyecto aporta valor a la institución al:
-
-- mejorar la organización del uso de espacios,
-- reducir errores y conflictos de programación,
-- agilizar la gestión administrativa,
-- fortalecer la planificación académica,
-- ofrecer una herramienta digital moderna y sostenible.
+El proyecto se encuentra en una etapa de prototipo funcional con lógica institucional aplicada y enfocada en la gestión real de reservas académicas. La solución evidencia el trabajo desarrollado y la propuesta aplicada a un caso concreto dentro del entorno educativo.
 
 ## ✅ Conclusión
 
-Este repositorio representa un proyecto de grado con un enfoque real, práctico y útil para el entorno educativo. Su objetivo principal es dar solución a una necesidad institucional concreta: optimizar la gestión de reservas de aulas y horarios de manera organizada, visible y segura.
+Este repositorio representa una propuesta funcional, ordenada y aplicada a la realidad institucional. Su valor principal radica en resolver un problema recurrente del entorno académico: la organización del uso de aulas y la coordinación de horarios de manera digital, segura y clara.
 
-La finalidad no es solo mostrar código, sino dejar evidencia de un desarrollo pensado para la institución, con una lógica sólida, una arquitectura funcional y una propuesta clara para la administración académica.
+La intención del proyecto no es solo mostrar código, sino dejar evidencia de un desarrollo pensado para la institución, con una lógica sólida, una estructura útil y una experiencia de uso clara para usuarios administrativos y docentes.
 
 ---
 
 <p align="center">
-  <img alt="Proyecto académico" src="https://img.shields.io/badge/Proyecto%20acad%C3%A9mico-Desarrollo%20institucional-10B981?style=flat-square" />
+  <img src="https://img.shields.io/badge/Proyecto%20acad%C3%A9mico-Desarrollo%20institucional-10B981?style=for-the-badge" alt="Proyecto académico" />
 </p>
