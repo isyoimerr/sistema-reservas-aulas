@@ -88,7 +88,6 @@ export default function ReservasPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const supabaseStatus = getSupabaseStatus();
 
   const role = typeof window !== "undefined" ? localStorage.getItem("session-role") : "Profesor";
   const currentUserId = typeof window !== "undefined" ? Number(localStorage.getItem("session-user-id") ?? 0) : 0;
@@ -408,12 +407,6 @@ export default function ReservasPage() {
             Nueva solicitud
           </button>
         </header>
-
-        {!supabaseStatus.enabled ? (
-          <div className="form-error" role="status" aria-live="polite">
-            {supabaseStatus.message}
-          </div>
-        ) : null}
 
         <div className="reservas-controls">
           <div className="search-box">

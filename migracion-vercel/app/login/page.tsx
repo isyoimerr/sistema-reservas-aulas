@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("admin123");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const supabaseStatus = getSupabaseStatus();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,7 +50,7 @@ export default function LoginPage() {
     }
 
     if (!supabase) {
-      setError(supabaseStatus.message || "No se pudo conectar con Supabase.");
+      setError("Credenciales inválidas. Verifica el correo y la contraseña.");
       return;
     }
 
@@ -117,12 +116,6 @@ export default function LoginPage() {
             <div className="login-header">
               <h2>Iniciar sesión</h2>
             </div>
-
-            {!supabaseStatus.enabled ? (
-              <div className="form-error" role="status" aria-live="polite">
-                {supabaseStatus.message}
-              </div>
-            ) : null}
 
             <form className="auth-form login-form" onSubmit={handleSubmit}>
               <label>

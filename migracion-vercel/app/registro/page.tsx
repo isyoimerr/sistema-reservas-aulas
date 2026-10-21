@@ -24,7 +24,6 @@ export default function RegistroPage() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const supabaseStatus = getSupabaseStatus();
 
   const handleChange = (field: keyof FormData, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -46,7 +45,7 @@ export default function RegistroPage() {
     }
 
     if (!supabase) {
-      setError(supabaseStatus.message || "La conexión con Supabase no está disponible.");
+      setError("No se pudo completar el registro. La base de datos no está disponible en este momento.");
       setSuccess("");
       return;
     }
@@ -104,12 +103,6 @@ export default function RegistroPage() {
             Completa la información para crear una cuenta institucional y guardarla en la base real cuando Supabase esté configurado.
           </p>
         </div>
-
-        {!supabaseStatus.enabled ? (
-          <div className="form-error" role="status" aria-live="polite">
-            {supabaseStatus.message}
-          </div>
-        ) : null}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <h2>Registro</h2>
