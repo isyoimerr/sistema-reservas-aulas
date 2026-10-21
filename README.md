@@ -3,6 +3,10 @@
 > Proyecto de grado para la gestión institucional de aulas, horarios, usuarios y reservas académicas.
 
 <p align="center">
+  <img src="img/Laboratorio%20escolar%20de%20programaci%C3%B3n.png" alt="Portada del sistema de reservas de aulas" width="100%" />
+</p>
+
+<p align="center">
   <img alt="PHP" src="https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white" />
   <img alt="MySQL" src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white" />
   <img alt="Next.js" src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white" />
