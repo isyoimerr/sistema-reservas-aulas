@@ -131,7 +131,7 @@ export function appendAuditEntry({
   role = 'Profesor',
   date = new Date().toISOString(),
 } = {}) {
-  const existing = JSON.parse(localStorage.getItem('demo-auditoria') ?? '[]');
+  const existing = JSON.parse(localStorage.getItem('cache-auditoria') ?? '[]');
   const nextEntry = {
     id: Date.now(),
     action,
@@ -144,6 +144,6 @@ export function appendAuditEntry({
   };
 
   const updated = [nextEntry, ...existing].slice(0, 10);
-  localStorage.setItem('demo-auditoria', JSON.stringify(updated));
+  localStorage.setItem('cache-auditoria', JSON.stringify(updated));
   return updated;
 }

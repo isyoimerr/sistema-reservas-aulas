@@ -52,12 +52,11 @@ export default function AulasPage() {
     (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
   const loadData = async () => {
-    const savedAulas = JSON.parse(localStorage.getItem("demo-aulas") ?? "null") as AulaRecord[] | null;
+    const savedAulas = JSON.parse(localStorage.getItem("cache-aulas") ?? "null") as AulaRecord[] | null;
 
     if (!supabase) {
-      const finalAulas = savedAulas?.length ? savedAulas : fallbackAulas;
-      localStorage.setItem("demo-aulas", JSON.stringify(finalAulas));
-      setAulas(finalAulas);
+      setMessage("No se pudo conectar con Supabase. Revisa la configuración de la base de datos.");
+      setAulas(savedAulas?.length ? savedAulas : []);
       return;
     }
 
@@ -65,15 +64,16 @@ export default function AulasPage() {
       const { data, error } = await supabase.from("aulas").select("*").order("nombre_aula", { ascending: true });
       if (error) throw error;
 
-      const nextAulas = (data as AulaRecord[] | null)?.length ? (data as AulaRecord[]) : fallbackAulas;
-      localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
+      const nextAulas = (data as AulaRecord[] | null)?.length ? (data as AulaRecord[]) : [];
+      localStorage.setItem("cache-aulas", JSON.stringify(nextAulas));
       setAulas(nextAulas);
+      setMessage("");
     } catch (error) {
-      const fallbackData = savedAulas?.length ? savedAulas : fallbackAulas;
-      localStorage.setItem("demo-aulas", JSON.stringify(fallbackData));
+      const fallbackData = savedAulas?.length ? savedAulas : [];
+      localStorage.setItem("cache-aulas", JSON.stringify(fallbackData));
       setAulas(fallbackData);
-      setMessage("No se pudo conectar a Supabase; se está usando el catálogo demo del sistema.");
-      console.warn("Fallo en Supabase para aulas, usando datos demo.", error);
+      setMessage("No se pudo conectar con Supabase. Revisa la configuración de la base de datos.");
+      console.warn("Fallo en Supabase para aulas.", error);
     }
   };
 
@@ -121,13 +121,11 @@ export default function AulasPage() {
 
     try {
       if (!supabase) {
-        const current = JSON.parse(localStorage.getItem("demo-aulas") ?? "[]") as AulaRecord[];
-        const updated = form.id_aula
-          ? current.map((item) => (item.id_aula === form.id_aula ? { ...item, ...payload, id_aula: item.id_aula } : item))
-          : [{ ...payload, id_aula: Date.now() }, ...current];
-        localStorage.setItem("demo-aulas", JSON.stringify(updated));
-        setAulas(updated);
-      } else {
+        setMessage("No se pudo guardar la aula porque Supabase no está disponible.");
+        return;
+      }
+
+      if (form.id_aula) {
         if (form.id_aula) {
           const { error } = await supabase.from("aulas").update(payload).eq("id_aula", form.id_aula);
           if (error) throw error;

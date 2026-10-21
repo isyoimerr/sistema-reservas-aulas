@@ -34,9 +34,9 @@ export default function DashboardPage() {
       return;
     }
 
-    const reservas = JSON.parse(localStorage.getItem("demo-reservas") ?? "[]") as Array<Record<string, any>>;
-    const aulas = JSON.parse(localStorage.getItem("demo-aulas") ?? "[]") as Array<Record<string, any>>;
-    const auditoria = JSON.parse(localStorage.getItem("demo-auditoria") ?? "[]") as Array<Record<string, any>>;
+    const reservas = JSON.parse(localStorage.getItem("cache-reservas") ?? "[]") as Array<Record<string, any>>;
+    const aulas = JSON.parse(localStorage.getItem("cache-aulas") ?? "[]") as Array<Record<string, any>>;
+    const auditoria = JSON.parse(localStorage.getItem("cache-auditoria") ?? "[]") as Array<Record<string, any>>;
 
     const fechaActual = new Date();
     const reservasEsteMes = reservas.filter((reserva) => {

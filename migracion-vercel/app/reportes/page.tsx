@@ -30,10 +30,10 @@ export default function ReportesPage() {
   const [reservas, setReservas] = useState<ReservaRecord[]>([]);
 
   const loadData = async () => {
-    const savedReservas = JSON.parse(localStorage.getItem("demo-reservas") ?? "null") as ReservaRecord[] | null;
+    const savedReservas = JSON.parse(localStorage.getItem("cache-reservas") ?? "null") as ReservaRecord[] | null;
 
     if (!supabase) {
-      setReservas(savedReservas?.length ? savedReservas : fallbackReservas);
+      setReservas(savedReservas?.length ? savedReservas : []);
       return;
     }
 
@@ -43,11 +43,11 @@ export default function ReportesPage() {
       .order("fecha_reserva", { ascending: false });
 
     if (error) {
-      setReservas(savedReservas?.length ? savedReservas : fallbackReservas);
+      setReservas(savedReservas?.length ? savedReservas : []);
       return;
     }
 
-    setReservas((data as ReservaRecord[]) ?? (savedReservas?.length ? savedReservas : fallbackReservas));
+    setReservas((data as ReservaRecord[]) ?? (savedReservas?.length ? savedReservas : []));
   };
 
   useEffect(() => {

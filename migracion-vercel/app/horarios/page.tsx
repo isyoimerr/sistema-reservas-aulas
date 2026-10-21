@@ -45,8 +45,8 @@ const normalizeText = (value: string | null | undefined) =>
   (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
 const fallbackHorarios: HorarioRecord[] = [
-  { id_horario: 1, id_usuario: 2, id_aula: 1, dia_semana: "Lunes", hora_inicio: "08:00", hora_fin: "10:00", usuarios: { nombre: "Profesor", apellido: "Demo" }, aulas: { nombre_aula: "Aula 101", codigo_aula: "A-101" } },
-  { id_horario: 2, id_usuario: 2, id_aula: 2, dia_semana: "Miércoles", hora_inicio: "12:00", hora_fin: "14:00", usuarios: { nombre: "Profesor", apellido: "Demo" }, aulas: { nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" } },
+  { id_horario: 1, id_usuario: 2, id_aula: 1, dia_semana: "Lunes", hora_inicio: "08:00", hora_fin: "10:00", usuarios: { nombre: "Profesor", apellido: "Asignado" }, aulas: { nombre_aula: "Aula 101", codigo_aula: "A-101" } },
+  { id_horario: 2, id_usuario: 2, id_aula: 2, dia_semana: "Miércoles", hora_inicio: "12:00", hora_fin: "14:00", usuarios: { nombre: "Profesor", apellido: "Asignado" }, aulas: { nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" } },
   { id_horario: 3, id_usuario: 3, id_aula: 3, dia_semana: "Viernes", hora_inicio: "07:00", hora_fin: "09:00", usuarios: { nombre: "Ana", apellido: "Gómez" }, aulas: { nombre_aula: "Salón de grados", codigo_aula: "SAL-3" } },
 ];
 
@@ -59,14 +59,14 @@ const getLocalStorageJson = <T,>(key: string) => {
 };
 
 const saveHorariosToLocal = (records: HorarioRecord[]) => {
-  localStorage.setItem("demo-horarios", JSON.stringify(records));
+  localStorage.setItem("cache-horarios", JSON.stringify(records));
 };
 
 const saveSingleHorario = async (payload: { id_usuario: number; id_aula: number; dia_semana: string; hora_inicio: string; hora_fin: string }) => {
   if (!supabase) {
-    const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
-    const actualUsuarios = getLocalStorageJson<Array<Record<string, any>>>("demo-usuarios") ?? [];
-    const actualAulas = getLocalStorageJson<Array<Record<string, any>>>("demo-aulas") ?? [];
+    const current = getLocalStorageJson<HorarioRecord[]>("cache-horarios") ?? [];
+    const actualUsuarios = getLocalStorageJson<Array<Record<string, any>>>("cache-usuarios") ?? [];
+    const actualAulas = getLocalStorageJson<Array<Record<string, any>>>("cache-aulas") ?? [];
     const display = resolveHorarioDisplay(payload.id_usuario, payload.id_aula, actualUsuarios, actualAulas);
 
     const next: HorarioRecord = {
@@ -140,15 +140,15 @@ export default function HorariosPage() {
   const [parsedHorarios, setParsedHorarios] = useState<HorarioPayload[]>([]);
 
   const loadData = async () => {
-    const savedHorarios = getLocalStorageJson<HorarioRecord[]>("demo-horarios");
-    const savedUsuarios = getLocalStorageJson<Array<Record<string, any>>>("demo-usuarios");
-    const savedAulas = getLocalStorageJson<Array<Record<string, any>>>("demo-aulas");
+    const savedHorarios = getLocalStorageJson<HorarioRecord[]>("cache-horarios");
+    const savedUsuarios = getLocalStorageJson<Array<Record<string, any>>>("cache-usuarios");
+    const savedAulas = getLocalStorageJson<Array<Record<string, any>>>("cache-aulas");
     const currentRole = localStorage.getItem("session-role") ?? "Profesor";
     const currentUserIdFromStorage = Number(localStorage.getItem("session-user-id") ?? 0);
 
     if (!supabase) {
       const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
         { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
       ];
       const finalAulas = savedAulas?.length ? savedAulas : [
@@ -160,9 +160,9 @@ export default function HorariosPage() {
         if (currentRole === "Superadministrador") return true;
         return Number(horario.id_usuario) === Number(currentUserIdFromStorage);
       });
-      localStorage.setItem("demo-usuarios", JSON.stringify(finalUsuarios));
-      localStorage.setItem("demo-aulas", JSON.stringify(finalAulas));
-      localStorage.setItem("demo-horarios", JSON.stringify(finalHorarios));
+      localStorage.setItem("cache-usuarios", JSON.stringify(finalUsuarios));
+      localStorage.setItem("cache-aulas", JSON.stringify(finalAulas));
+      localStorage.setItem("cache-horarios", JSON.stringify(finalHorarios));
       setUsuarios(finalUsuarios);
       setAulas(finalAulas);
       setHorarios(finalHorarios);
@@ -186,7 +186,7 @@ export default function HorariosPage() {
       }
 
       const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
         { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
       ];
       const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [
@@ -199,16 +199,16 @@ export default function HorariosPage() {
         ? nextHorarios
         : nextHorarios.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
 
-      localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
-      localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
-      localStorage.setItem("demo-horarios", JSON.stringify(visibleHorarios));
+      localStorage.setItem("cache-usuarios", JSON.stringify(nextUsuarios));
+      localStorage.setItem("cache-aulas", JSON.stringify(nextAulas));
+      localStorage.setItem("cache-horarios", JSON.stringify(visibleHorarios));
       setUsuarios(nextUsuarios);
       setAulas(nextAulas);
       setHorarios(visibleHorarios);
       setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
     } catch (error) {
       const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com" },
+        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
         { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
       ];
       const fallbackAulasData = savedAulas?.length ? savedAulas : [
@@ -220,14 +220,14 @@ export default function HorariosPage() {
       const visibleFallback = currentRole === "Superadministrador"
         ? fallbackData
         : fallbackData.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
-      localStorage.setItem("demo-usuarios", JSON.stringify(fallbackUsuariosData));
-      localStorage.setItem("demo-aulas", JSON.stringify(fallbackAulasData));
-      localStorage.setItem("demo-horarios", JSON.stringify(visibleFallback));
+      localStorage.setItem("cache-usuarios", JSON.stringify(fallbackUsuariosData));
+      localStorage.setItem("cache-aulas", JSON.stringify(fallbackAulasData));
+      localStorage.setItem("cache-horarios", JSON.stringify(visibleFallback));
       setUsuarios(fallbackUsuariosData);
       setAulas(fallbackAulasData);
       setHorarios(visibleFallback);
       setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
-      console.warn("Fallo en Supabase para horarios, usando datos demo.", error);
+      console.warn("Fallo en Supabase para horarios.", error);
     }
   };
 
@@ -307,7 +307,7 @@ export default function HorariosPage() {
         );
 
         setUsuarios(updatedUsuarios);
-        localStorage.setItem("demo-usuarios", JSON.stringify(updatedUsuarios));
+        localStorage.setItem("cache-usuarios", JSON.stringify(updatedUsuarios));
 
         if (supabase) {
           await supabase.from("usuarios").update({
@@ -335,7 +335,7 @@ export default function HorariosPage() {
 
     const nextUsuarios = [createdUser, ...usuarios];
     setUsuarios(nextUsuarios);
-    localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
+    localStorage.setItem("cache-usuarios", JSON.stringify(nextUsuarios));
 
     if (supabase) {
       const { error } = await supabase.from("usuarios").insert({
@@ -383,7 +383,7 @@ export default function HorariosPage() {
 
     const nextAulas = [createdAula, ...aulas];
     setAulas(nextAulas);
-    localStorage.setItem("demo-aulas", JSON.stringify(nextAulas));
+    localStorage.setItem("cache-aulas", JSON.stringify(nextAulas));
 
     if (supabase) {
       const { error } = await supabase.from("aulas").insert({
@@ -450,7 +450,7 @@ export default function HorariosPage() {
       }
 
       if (!supabase) {
-        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const current = getLocalStorageJson<HorarioRecord[]>("cache-horarios") ?? [];
         const display = resolveHorarioDisplay(payload.id_usuario, payload.id_aula, usuarios, aulas);
         const updated = form.id_horario
           ? current.map((item) => (item.id_horario === form.id_horario ? { ...item, ...payload, id_horario: item.id_horario, usuarios: { nombre: display.usuario.nombre, apellido: display.usuario.apellido }, aulas: { nombre_aula: display.aula.nombre_aula, codigo_aula: display.aula.codigo_aula } } : item))
@@ -500,7 +500,7 @@ export default function HorariosPage() {
 
     try {
       if (!supabase) {
-        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const current = getLocalStorageJson<HorarioRecord[]>("cache-horarios") ?? [];
         const updated = current.filter((item) => item.id_horario !== id_horario);
         saveHorariosToLocal(updated);
         setHorarios(updated);
@@ -601,7 +601,7 @@ export default function HorariosPage() {
       }
 
       if (!supabase) {
-        const current = getLocalStorageJson<HorarioRecord[]>("demo-horarios") ?? [];
+        const current = getLocalStorageJson<HorarioRecord[]>("cache-horarios") ?? [];
         const mapped = deduplicated.map((item) => {
           const display = resolveHorarioDisplay(item.id_usuario, item.id_aula, usuarios, aulas);
 

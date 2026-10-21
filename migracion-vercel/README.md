@@ -15,15 +15,13 @@ Copia `.env.example` a `.env.local` y agrega tus credenciales reales de Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
 NEXT_PUBLIC_APP_NAME="Sistema de Reservas"
-NEXT_PUBLIC_DEMO_MODE=true
 ```
 
 ## Fase 2: base de datos en Supabase
-Se deja lista la preparación para esta fase sin romper el flujo local:
+Se deja lista la preparación para esta fase con conexión real a Supabase:
 
 - `supabase/schema.sql` contiene la base estructural del sistema.
-- `lib/supabase.ts` valida la conexión y activa modo demo si faltan credenciales.
-- `NEXT_PUBLIC_DEMO_MODE=true` conserva la app usable mientras no se conecte a Supabase real.
+- `lib/supabase.ts` valida la conexión real y bloquea la app si falta la configuración.
 - El siguiente paso real es crear el proyecto en Supabase, importar el schema y verificar roles, usuarios y políticas RLS.
 
 Checklist de validación recomendada:
@@ -47,4 +45,4 @@ npm run dev
 - migrar la lógica de auth y reservas desde la versión PHP original
 
 ## Importante
-Esta versión funciona en modo demo y no altera el proyecto original. Una vez se entreguen las credenciales reales de Supabase, el frontend puede conectarse a la base de datos sin tocar el resto de la estructura.
+Esta versión está preparada para conectarse a Supabase con credenciales reales y no mantiene modo de desarrollo ni datos falsos en producción.

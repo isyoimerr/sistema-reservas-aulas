@@ -45,101 +45,53 @@ export default function RegistroPage() {
       return;
     }
 
-    const normalizedEmail = form.email.trim().toLowerCase();
-
-    if (supabase) {
-      try {
-        const { data: existingUser, error: lookupError } = await supabase
-          .from("usuarios")
-          .select("id_usuario")
-          .eq("email", normalizedEmail)
-          .maybeSingle();
-
-        if (lookupError) {
-          throw lookupError;
-        }
-
-        if (existingUser) {
-          setError("Ya existe un usuario registrado con ese correo.");
-          setSuccess("");
-          return;
-        }
-
-        const { error: insertError } = await supabase.from("usuarios").insert({
-          nombre: form.nombre.trim(),
-          apellido: form.apellido.trim(),
-          email: normalizedEmail,
-          password: form.password,
-          id_rol: 2,
-          estado: "Activo",
-        });
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        setError("");
-        setSuccess("Registro exitoso. Ya puedes iniciar sesión.");
-        setForm(emptyForm);
-        setTimeout(() => router.push("/login"), 800);
-        return;
-      } catch {
-        const existing = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;
-        const alreadyExists = existing.some((user) => user.email === normalizedEmail);
-
-        if (alreadyExists) {
-          setError("Ya existe un usuario registrado con ese correo.");
-          setSuccess("");
-          return;
-        }
-
-        const users = [
-          ...existing,
-          {
-            nombre: form.nombre.trim(),
-            apellido: form.apellido.trim(),
-            email: normalizedEmail,
-            password: form.password,
-            role: "Profesor",
-          },
-        ];
-
-        localStorage.setItem("demo-usuarios", JSON.stringify(users));
-        setError("");
-        setSuccess("Supabase no respondió correctamente; se registró en modo respaldo local. Puedes iniciar sesión normalmente.");
-        setForm(emptyForm);
-
-        setTimeout(() => router.push("/login"), 900);
-        return;
-      }
-    }
-
-    const existing = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, string>>;
-    const alreadyExists = existing.some((user) => user.email === normalizedEmail);
-
-    if (alreadyExists) {
-      setError("Ya existe un usuario registrado con ese correo.");
+    if (!supabase) {
+      setError(supabaseStatus.message || "La conexión con Supabase no está disponible.");
       setSuccess("");
       return;
     }
 
-    const users = [
-      ...existing,
-      {
-        nombre: form.nombre,
-        apellido: form.apellido,
+    const normalizedEmail = form.email.trim().toLowerCase();
+
+    try {
+      const { data: existingUser, error: lookupError } = await supabase
+        .from("usuarios")
+        .select("id_usuario")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (lookupError) {
+        throw lookupError;
+      }
+
+      if (existingUser) {
+        setError("Ya existe un usuario registrado con ese correo.");
+        setSuccess("");
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("usuarios").insert({
+        nombre: form.nombre.trim(),
+        apellido: form.apellido.trim(),
         email: normalizedEmail,
         password: form.password,
-        role: "Profesor",
-      },
-    ];
+        id_rol: 2,
+        estado: "Activo",
+      });
 
-    localStorage.setItem("demo-usuarios", JSON.stringify(users));
-    setError("");
-    setSuccess("Registro exitoso. Ya puedes iniciar sesión.");
-    setForm(emptyForm);
+      if (insertError) {
+        throw insertError;
+      }
 
-    setTimeout(() => router.push("/login"), 800);
+      setError("");
+      setSuccess("Registro exitoso. Ya puedes iniciar sesión.");
+      setForm(emptyForm);
+      setTimeout(() => router.push("/login"), 800);
+    } catch (error) {
+      console.error("Error al registrar usuario:", error);
+      setError("No se pudo completar el registro. Revisa la conexión con Supabase.");
+      setSuccess("");
+    }
   };
 
   return (
@@ -154,7 +106,7 @@ export default function RegistroPage() {
         </div>
 
         {!supabaseStatus.enabled ? (
-          <div className="demo-banner" role="status" aria-live="polite">
+          <div className="form-error" role="status" aria-live="polite">
             {supabaseStatus.message}
           </div>
         ) : null}

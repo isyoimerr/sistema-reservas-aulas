@@ -39,7 +39,7 @@ const emptyForm: FormState = {
 
 const fallbackUsuarios: UsuarioRecord[] = [
   { id_usuario: 1, nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com", password: "admin123", id_rol: 1, estado: "Activo", roles: { nombre_rol: "Superadministrador" } },
-  { id_usuario: 2, nombre: "Profesor", apellido: "Demo", email: "profesor@sistema.com", password: "profesor123", id_rol: 2, estado: "Activo", roles: { nombre_rol: "Profesor" } },
+  { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com", password: "profesor123", id_rol: 2, estado: "Activo", roles: { nombre_rol: "Profesor" } },
 ];
 
 export default function UsuariosPage() {
@@ -56,14 +56,14 @@ export default function UsuariosPage() {
     (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
   const loadData = async () => {
-    const savedUsuarios = JSON.parse(localStorage.getItem("demo-usuarios") ?? "null") as UsuarioRecord[] | null;
-    const savedRoles = JSON.parse(localStorage.getItem("demo-roles") ?? "null") as Array<{ id_rol: number; nombre_rol: string }> | null;
+    const savedUsuarios = JSON.parse(localStorage.getItem("cache-usuarios") ?? "null") as UsuarioRecord[] | null;
+    const savedRoles = JSON.parse(localStorage.getItem("cache-roles") ?? "null") as Array<{ id_rol: number; nombre_rol: string }> | null;
 
     if (!supabase) {
       const finalRoles = savedRoles?.length ? savedRoles : [{ id_rol: 1, nombre_rol: "Superadministrador" }, { id_rol: 2, nombre_rol: "Profesor" }];
       const finalUsuarios = savedUsuarios?.length ? savedUsuarios : fallbackUsuarios;
-      localStorage.setItem("demo-roles", JSON.stringify(finalRoles));
-      localStorage.setItem("demo-usuarios", JSON.stringify(finalUsuarios));
+      localStorage.setItem("cache-roles", JSON.stringify(finalRoles));
+      localStorage.setItem("cache-usuarios", JSON.stringify(finalUsuarios));
       setRoles(finalRoles);
       setUsuarios(finalUsuarios);
       return;
@@ -84,18 +84,18 @@ export default function UsuariosPage() {
         : [{ id_rol: 1, nombre_rol: "Superadministrador" }, { id_rol: 2, nombre_rol: "Profesor" }];
       const nextUsuarios = (usuariosResult.data as UsuarioRecord[] | null)?.length ? (usuariosResult.data as UsuarioRecord[]) : fallbackUsuarios;
 
-      localStorage.setItem("demo-roles", JSON.stringify(nextRoles));
-      localStorage.setItem("demo-usuarios", JSON.stringify(nextUsuarios));
+      localStorage.setItem("cache-roles", JSON.stringify(nextRoles));
+      localStorage.setItem("cache-usuarios", JSON.stringify(nextUsuarios));
       setRoles(nextRoles);
       setUsuarios(nextUsuarios);
     } catch (error) {
       const fallbackRoles = savedRoles?.length ? savedRoles : [{ id_rol: 1, nombre_rol: "Superadministrador" }, { id_rol: 2, nombre_rol: "Profesor" }];
       const fallbackData = savedUsuarios?.length ? savedUsuarios : fallbackUsuarios;
-      localStorage.setItem("demo-roles", JSON.stringify(fallbackRoles));
-      localStorage.setItem("demo-usuarios", JSON.stringify(fallbackData));
+      localStorage.setItem("cache-roles", JSON.stringify(fallbackRoles));
+      localStorage.setItem("cache-usuarios", JSON.stringify(fallbackData));
       setRoles(fallbackRoles);
       setUsuarios(fallbackData);
-      console.warn("Fallo en Supabase para usuarios, usando datos demo del sistema.", error);
+      console.warn("Fallo en Supabase para usuarios.", error);
     }
   };
 
@@ -149,11 +149,11 @@ export default function UsuariosPage() {
 
     try {
       if (!supabase) {
-        const current = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as UsuarioRecord[];
+        const current = JSON.parse(localStorage.getItem("cache-usuarios") ?? "[]") as UsuarioRecord[];
         const updated = form.id_usuario
           ? current.map((item) => (item.id_usuario === form.id_usuario ? { ...item, ...payload, id_usuario: item.id_usuario, roles: { nombre_rol: Number(form.id_rol) === 1 ? "Superadministrador" : "Profesor" } } : item))
           : [{ ...payload, id_usuario: Date.now(), roles: { nombre_rol: Number(form.id_rol) === 1 ? "Superadministrador" : "Profesor" } }, ...current];
-        localStorage.setItem("demo-usuarios", JSON.stringify(updated));
+        localStorage.setItem("cache-usuarios", JSON.stringify(updated));
         setUsuarios(updated);
       } else {
         if (form.id_usuario) {
@@ -197,9 +197,9 @@ export default function UsuariosPage() {
 
     try {
       if (!supabase) {
-        const current = JSON.parse(localStorage.getItem("demo-usuarios") ?? "[]") as UsuarioRecord[];
+        const current = JSON.parse(localStorage.getItem("cache-usuarios") ?? "[]") as UsuarioRecord[];
         const updated = current.filter((item) => item.id_usuario !== id_usuario);
-        localStorage.setItem("demo-usuarios", JSON.stringify(updated));
+        localStorage.setItem("cache-usuarios", JSON.stringify(updated));
         setUsuarios(updated);
       } else {
         const { error } = await supabase.from("usuarios").delete().eq("id_usuario", id_usuario);

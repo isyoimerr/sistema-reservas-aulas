@@ -33,7 +33,7 @@ export default function RoleSidebar() {
     const storedRole = window.localStorage.getItem("session-role") ?? "Profesor";
     const storedName = window.localStorage.getItem("session-name");
     const storedUserId = Number(window.localStorage.getItem("session-user-id") ?? 0);
-    const storedUsers = JSON.parse(window.localStorage.getItem("demo-usuarios") ?? "[]") as Array<Record<string, any>>;
+    const storedUsers = JSON.parse(window.localStorage.getItem("cache-usuarios") ?? "[]") as Array<Record<string, any>>;
 
     setRole(storedRole);
 

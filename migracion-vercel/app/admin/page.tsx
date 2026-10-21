@@ -8,15 +8,9 @@ import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@sistema.com");
+  const [email, setEmail] = useState("");
   const [stats, setStats] = useState({ totalUsuarios: 0, totalReservas: 0, pendientes: 0 });
-
-  const recentActivities = [
-    { title: "Reservas pendientes revisadas", time: "Hace 10 min" },
-    { title: "Usuario actualizado", time: "Hace 28 min" },
-    { title: "Horario académico modificado", time: "Hace 1 hora" },
-    { title: "Aula LAB-02 activada", time: "Hace 2 horas" },
-  ];
+  const hasDatabase = Boolean(supabase);
 
   useEffect(() => {
     const role = localStorage.getItem("session-role");
@@ -32,11 +26,11 @@ export default function AdminPage() {
       return;
     }
 
-    setEmail(sessionEmail || "admin@sistema.com");
+    setEmail(sessionEmail || "");
 
     const loadStats = async () => {
       if (!supabase) {
-        setStats({ totalUsuarios: 6, totalReservas: 5, pendientes: 2 });
+        setStats({ totalUsuarios: 0, totalReservas: 0, pendientes: 0 });
         return;
       }
 
@@ -69,7 +63,7 @@ export default function AdminPage() {
 
           <div className="user-pill admin-pill">
             <span>Superadministrador</span>
-            <small>{email}</small>
+            <small>{email || "Sin sesión activa"}</small>
           </div>
         </header>
 
@@ -105,19 +99,13 @@ export default function AdminPage() {
           <article className="info-card admin-card dashboard-section activity-card">
             <div className="section-header">
               <h3>Registro de actividades</h3>
-              <span>Hoy</span>
+              <span>Actual</span>
             </div>
-            <ul className="activity-list">
-              {recentActivities.map((activity) => (
-                <li key={activity.title}>
-                  <span className="activity-dot" />
-                  <div>
-                    <strong>{activity.title}</strong>
-                    <small>{activity.time}</small>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {hasDatabase ? (
+              <p className="empty-state">No hay actividad reciente en la base de datos.</p>
+            ) : (
+              <p className="empty-state">La base de datos no está configurada para registrar actividad real.</p>
+            )}
           </article>
         </div>
       </section>

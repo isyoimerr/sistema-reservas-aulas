@@ -1205,29 +1205,6 @@ button, input, select, textarea { font: inherit; }
   border: 1px solid #a7f3d0;
 }
 
-.demo-banner {
-  margin: 0 0 1rem;
-  padding: 0.8rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(180, 83, 9, 0.22);
-  background: rgba(254, 243, 199, 0.8);
-  color: #92400e;
-  font-size: 0.92rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.demo-accounts {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--muted);
-  background: #f7f9fc;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-}
-
 .text-link {
   color: #1d4ed8;
   font-weight: 700;

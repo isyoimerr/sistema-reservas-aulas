@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const demoModeEnvValue = process.env.NEXT_PUBLIC_DEMO_MODE?.toLowerCase() ?? "";
 
 const isPlaceholderValue = (value: string | undefined) => {
   if (typeof value !== "string") return true;
@@ -49,7 +48,7 @@ const resolvedSupabaseUrl = normalizeSupabaseUrl(supabaseUrl);
 const resolvedSupabaseAnonKey = typeof supabaseAnonKey === "string" ? supabaseAnonKey.trim() : "";
 
 const hasPlaceholderCredentials = isPlaceholderValue(resolvedSupabaseUrl) || isPlaceholderValue(resolvedSupabaseAnonKey);
-const demoMode = demoModeEnvValue === "true" || (!supabaseUrl && !supabaseAnonKey) || hasPlaceholderCredentials;
+const requiresValidCredentials = hasPlaceholderCredentials;
 
 const isValidSupabaseUrl = (value: string | undefined) => {
   if (typeof value !== "string") return false;
@@ -59,7 +58,7 @@ const isValidSupabaseUrl = (value: string | undefined) => {
 };
 
 export const supabase =
-  !demoMode && isValidSupabaseUrl(supabaseUrl) && resolvedSupabaseAnonKey.length > 0
+  !requiresValidCredentials && isValidSupabaseUrl(supabaseUrl) && resolvedSupabaseAnonKey.length > 0
     ? createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKey, {
         auth: {
           persistSession: false,
@@ -71,7 +70,6 @@ export const supabase =
 
 export type SupabaseConnectionStatus = {
   enabled: boolean;
-  demo: boolean;
   reason: string | null;
   message: string;
 };
@@ -81,20 +79,18 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
   const hasDashboardUrl = isDashboardUrl(resolvedSupabaseUrl);
   const hasInvalidUrl = Boolean(resolvedSupabaseUrl) && !isValidSupabaseUrl(resolvedSupabaseUrl);
 
-  if (demoMode) {
+  if (requiresValidCredentials) {
     return {
       enabled: false,
-      demo: true,
-      reason: "demo-mode",
+      reason: "invalid-credentials",
       message:
-        "Modo demo activo: Supabase no está configurado. Los datos se guardan solo localmente; configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY para persistencia real.",
+        "La configuración de Supabase no es válida. Revisa NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
     };
   }
 
   if (hasDashboardUrl) {
     return {
       enabled: false,
-      demo: false,
       reason: "dashboard-url",
       message:
         "Estás usando la URL del dashboard de Supabase, no la URL del proyecto. Debe ser algo como https://<ref>.supabase.co, no https://supabase.com/dashboard/project/<ref>.",
@@ -104,7 +100,6 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
   if (hasMissingEnv) {
     return {
       enabled: false,
-      demo: false,
       reason: "missing-env",
       message:
         "Supabase no está configurado: faltan NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY. El sistema no puede guardar en la base real.",
@@ -114,7 +109,6 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
   if (hasInvalidUrl) {
     return {
       enabled: false,
-      demo: false,
       reason: "invalid-url",
       message:
         "La URL de Supabase no es válida. Revisa NEXT_PUBLIC_SUPABASE_URL antes de intentar guardar reservas o usuarios reales.",
@@ -124,7 +118,6 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
   if (!supabase) {
     return {
       enabled: false,
-      demo: false,
       reason: "client-unavailable",
       message:
         "Supabase no pudo inicializarse. Revisa la configuración del proyecto y las credenciales de anon key.",
@@ -133,7 +126,6 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
 
   return {
     enabled: true,
-    demo: false,
     reason: null,
     message: "Supabase conectado y listo para guardar datos reales.",
   };
@@ -141,7 +133,6 @@ export function getSupabaseStatus(): SupabaseConnectionStatus {
 
 export const supabaseStatus = getSupabaseStatus();
 export const isSupabaseConfigured = supabaseStatus.enabled;
-export const isDemoModeEnabled = supabaseStatus.demo;
 
 export async function checkSupabaseConnection() {
   const status = getSupabaseStatus();
