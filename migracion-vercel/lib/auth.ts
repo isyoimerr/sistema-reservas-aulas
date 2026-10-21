@@ -1,6 +1,35 @@
 export const ADMIN_ROLE = "Superadministrador";
 export const PROFESSOR_ROLE = "Profesor";
 
+export const DEMO_USERS = {
+  "admin@sistema.com": {
+    password: "admin123",
+    id_usuario: 1,
+    nombre: "Admin",
+    apellido: "Sistema",
+    id_rol: 1,
+    role: ADMIN_ROLE,
+  },
+  "profesor@sistema.com": {
+    password: "profesor123",
+    id_usuario: 2,
+    nombre: "Profesor",
+    apellido: "Asignado",
+    id_rol: 2,
+    role: PROFESSOR_ROLE,
+  },
+} as const;
+
+export function getDemoUser(email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = DEMO_USERS[normalizedEmail as keyof typeof DEMO_USERS];
+  if (!user || user.password !== password) {
+    return null;
+  }
+
+  return user;
+}
+
 export function getSessionState() {
   if (typeof window === "undefined") {
     return { role: null, email: "", userId: null };

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { isAdminSession, isProfessorSession } from "@/lib/auth";
+import { getDemoUser, isAdminSession, isProfessorSession } from "@/lib/auth";
 import { getSupabaseStatus, supabase } from "@/lib/supabase";
 
 const getRoleName = (idRol: number | null | undefined) =>
@@ -28,6 +28,24 @@ export default function LoginPage() {
         router.push("/admin");
         return;
       }
+      router.push("/dashboard");
+      return;
+    }
+
+    const demoUser = getDemoUser(normalizedEmail, password);
+    if (demoUser) {
+      const nombreCompleto = `${demoUser.nombre ?? ""} ${demoUser.apellido ?? ""}`.trim();
+      localStorage.setItem("session-role", demoUser.role);
+      localStorage.setItem("session-email", normalizedEmail);
+      localStorage.setItem("session-user-id", String(demoUser.id_usuario));
+      localStorage.setItem("session-name", nombreCompleto || "Profesor");
+      setError("");
+
+      if (demoUser.role === "Superadministrador") {
+        router.push("/admin");
+        return;
+      }
+
       router.push("/dashboard");
       return;
     }
