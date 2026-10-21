@@ -1,78 +1,181 @@
-# Sistema de reservas de aulas - ITEJABB
+# Sistema de Reservas de Aulas
 
-Proyecto web en PHP con PDO y MySQL para la gestión de reservas, horarios, usuarios y aulas de la institución. La solución está pensada para uso interno en un entorno académico, con control de roles y panel administrativo.
+<div align="center">
+  <img src="img/fachada-institucion.jpg" alt="Fachada de la institución" width="900" />
+</div>
 
-## Estado actual del proyecto
+Proyecto de grado desarrollado para optimizar la gestión de reservas de aulas, horarios, usuarios y procesos académicos de una institución educativa. La solución permite coordinar el uso de espacios físicos de forma ordenada, segura y eficiente, evitando conflictos de programación y mejorando la administración docente.
 
-El proyecto ya está funcionando como una aplicación PHP modular con autenticación por sesión y validación de permisos por rol. En la parte visual se avanzó en un rediseño más moderno y responsivo, especialmente en el panel administrativo.
+## ¿Qué es este proyecto?
 
-### Cambios recientes documentados
-- Ajuste del panel administrativo para que se vea de forma más ordenada y compacta en tablet y móvil.
-- Sidebar principal a la izquierda, con comportamiento desplegable en pantallas pequeñas.
-- Contenido principal y métricas visuales a la derecha, orientado a una visión tipo dashboard.
-- Mejoras en espaciado, tamaños de fuentes y distribución de tarjetas para mejorar la experiencia móvil.
-- Mantención del diseño de escritorio sin romper la navegación principal.
+Este sistema está pensado para respaldar la administración interna de la institución, centralizando en una sola plataforma la gestión de:
 
-## Stack actual
+- aulas y salas disponibles,
+- horarios docentes,
+- solicitudes de reserva,
+- usuarios del sistema con roles definidos,
+- validaciones académicas y administrativas,
+- reportes y seguimiento del uso de espacios.
+
+El objetivo es transformar un proceso tradicional y propenso a errores en una solución digital, fácil de usar, con control por perfiles y con trazabilidad de acciones.
+
+## ¿Para quién está pensado?
+
+Está orientado a:
+
+- la institución educativa,
+- la dirección o coordinación académica,
+- docentes,
+- personal administrativo,
+- usuarios con rol de administración y supervisión.
+
+## Propósito académico
+
+Este proyecto se presenta como una solución tecnológica desarrollada dentro de un contexto de proyecto de grado. Su finalidad es demostrar la capacidad de diseñar, implementar y consolidar un sistema funcional para resolver un problema real del entorno institucional: la organización del uso de aulas y la administración de horarios.
+
+No es un proyecto ficticio ni un prototipo sin contexto. Está enfocado en una necesidad real de la operación académica diaria.
+
+---
+
+## Funcionalidades principales
+
+- gestión de aulas y disponibilidad,
+- registro de usuarios por rol,
+- autenticación para acceso seguro,
+- creación y validación de reservas,
+- revisión de horarios y conflictos,
+- panel administrativo con métricas clave,
+- seguimiento de estados de solicitudes,
+- gestión de permisos por perfil,
+- arquitectura preparada para entorno institucional y despliegue web.
+
+## Roles del sistema
+
+### Superadministrador
+Tiene acceso completo a la gestión del sistema, incluyendo usuarios, aulas, reservas, horarios y reportes.
+
+### Profesor
+Puede consultar y gestionar sus reservass y visualizar la disponibilidad según su actividad académica.
+
+## Stack tecnológico
+
+El proyecto combina una solución web institucional con una migración moderna hacia una plataforma en Vercel/Next.js:
+
 - PHP 8.x
 - MySQL / MariaDB
-- Apache a través de XAMPP
 - PDO para acceso a base de datos
-- Bootstrap 5
-- Bootstrap Icons
-- JavaScript para interacciones del panel y controles responsivos
-- Next.js 16 + React 19 para la migración Vercel
-- Supabase PostgreSQL para persistencia y autenticación institucional
+- JavaScript y Bootstrap
+- Next.js 16 + React
+- Supabase para persistencia y autenticación
+- Arquitectura modular para separar lógica, vista y configuración
 
-## Funcionalidades principales ya incorporadas
-- Menú lateral izquierdo con opciones de navegación del sistema.
-- Registro de usuarios docentes desde la interfaz.
-- Inicio de sesión con validación por correo y contraseña.
-- Búsqueda de reservas por aula, docente, motivo o estado.
-- Registro de nuevas reservas desde el dashboard.
-- Edición de reservas existentes desde la tabla.
-- Validación de disponibilidad y estados de reserva.
-- Dashboard administrativo con métricas rápidas.
-- Persistencia real en Supabase cuando la configuración está activa.
+## Visión del sistema
 
-## Roles y flujo principal
-- Superadministrador: acceso completo a gestión, usuarios, aulas, reservas, horarios y reportes.
-- Profesor: acceso a reservas y vista general de su actividad.
-- Login centralizado en la carpeta login.
-- Control de permisos centralizado en config/rbac.php.
+La aplicación busca consolidar la administración académica en un entorno único, accesible y confiable. Con esto se mejora:
 
-## Estructura principal
-- admin/: panel administrativo y gestión interna
-- aulas/: administración de aulas
-- reservas/: creación, consulta y validación de reservas
-- horarios/: carga y procesamiento de horarios
-- usuarios/: registro y perfil de docentes
-- login/: autenticación y cierre de sesión
-- config/: conexión, validaciones y RBAC
-- css/: estilos globales del proyecto
-- js/: interacciones del front-end
-- database/: scripts SQL de base de datos
-- supabase/: base de datos y esquema relacionado
-- docs/: documentación técnica y de despliegue
+- la organización del uso de aulas,
+- la visibilidad operativa para el personal administrativo,
+- la planificación de horarios docentes,
+- la reducción de conflictos y duplicidades,
+- la trazabilidad del uso de los espacios institucionales.
 
-## Buenas prácticas del proyecto
-- Usar PDO con prepared statements.
-- Validar sesión en todas las vistas que requieren autenticación.
-- Mantener la lógica de permisos centralizada y consistente.
-- No aplicar eliminación física sobre registros sensibles sin necesidad.
-- Registrar cambios importantes en la memoria del proyecto.
+---
 
-## Recomendaciones actuales
-1. Mantener la base de datos en MySQL local mientras se consolida la versión institucional.
-2. Revisar la migración a Supabase o un entorno cloud solo cuando se defina el despliegue final.
-3. Usar la memoria del proyecto como fuente de verdad para cambios funcionales y visuales.
-4. Continuar validando la experiencia móvil antes de cada entrega importante.
+## Capturas del proyecto
 
-## Memoria viva del proyecto
-La memoria del proyecto se conserva en la carpeta /memories/repo/ y debe actualizarse cada vez que se haga una modificación relevante del sistema, UX o arquitectura. Esto ayuda a conservar contexto y evitar pérdidas de conocimiento entre cambios.
+<div align="center">
+  <img src="img/Laboratorio escolar de programación.png" alt="Laboratorio de programación" width="420" />
+  <img src="img/Docente observa laboratorio de computación.png" alt="Docente observando laboratorio" width="420" />
+</div>
 
-## Siguiente línea de trabajo
-- revisar y consolidar la experiencia móvil en las demás pantallas del sistema
-- normalizar la documentación por módulo
-- validar flujo completo de reservas y permisos en entorno real
-- preparar la migración o despliegue final según la estrategia institucional
+---
+
+## Estructura del repositorio
+
+```text
+.
+├── admin/
+├── aulas/
+├── config/
+├── css/
+├── database/
+├── docs/
+├── horarios/
+├── img/
+├── js/
+├── login/
+├── migracion-vercel/
+├── reportes/
+├── reservas/
+├── supabase/
+├── usuarios/
+├── index.php
+├── dashboard.php
+├── README.md
+├── package.json
+└── .env.local
+```
+
+## Cómo funciona
+
+1. El usuario ingresa con sus credenciales.
+2. El sistema identifica su rol.
+3. Según el perfil, el usuario accede a la vista correspondiente.
+4. El sistema valida si el aula, horario y la solicitud son coherentes con la programación académica.
+5. La reserva queda registrada y queda disponible para consulta o administración.
+
+## Requisitos
+
+- PHP 8 o superior
+- MySQL / MariaDB
+- Navegador moderno
+- Entorno local o servidor institucional
+- Variables de entorno configuradas para Supabase
+
+## Configuración
+
+El proyecto usa variables de entorno para la conexión con Supabase. Estas deben configurarse correctamente en el entorno de ejecución, especialmente en la app de migración Vercel/Next.js.
+
+Ejemplo:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=tu_url_del_proyecto
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
+```
+
+## Estado del proyecto
+
+El sistema está en una fase de consolidación como solución funcional para uso institucional. La versión actual incluye:
+
+- autenticación por roles,
+- gestión de reservas,
+- administración de aulas y profesores,
+- panel administrativo,
+- migración modernizada a Next.js,
+- preparación para despliegue en entorno web.
+
+## Objetivo institucional
+
+El proyecto intenta ofrecer una herramienta tecnológica que permita al personal académico y administrativo organizar mejor la disponibilidad de espacios, reducir errores manuales y fortalecer la operativa de la institución.
+
+Se trata de una solución útil, útil para la realidad educativa, y con perspectiva de continuidad y mejora en etapas futuras.
+
+---
+
+## Conclusión
+
+Este sistema representa un proyecto de grado enfocado en resolver un problema real de la institución: la gestión ordenada y segura del uso de aulas y horarios. Su valor no solo está en la parte técnica, sino también en la utilidad institucional que aporta a la organización académica, la administración y la experiencia docente.
+
+El repositorio reúne la base del proyecto original y la evolución hacia una versión moderna y preparada para entornos web y despliegue institucional.
+
+---
+
+## Licencia y uso
+
+Este proyecto está desarrollado con fines académicos y de gestión institucional. Su uso debe ajustarse a la política interna de la institución y a los objetivos del proyecto de grado en el que se enmarca.
+
+---
+
+## Nota final
+
+El objetivo principal de este repositorio es dejar documentado, claro y profesional el alcance del proyecto para que cualquier persona que lo revise pueda entender de inmediato qué es, para quién está hecho, para qué sirve y cómo encaja como solución tecnológica académica.
