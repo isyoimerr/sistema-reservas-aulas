@@ -2,6 +2,11 @@
 
 > Proyecto académico orientado a la gestión institucional de reservas, horarios, usuarios y control operativo de aulas.
 
+<div align="center">
+  <img src="img/Laboratorio%20escolar%20de%20programaci%C3%B3n.png" alt="Laboratorio escolar de programación" width="430" />
+  <img src="img/Docente%20observa%20laboratorio%20de%20computaci%C3%B3n.png" alt="Docente observando laboratorio de computación" width="430" />
+</div>
+
 <p align="center">
   <img src="https://img.shields.io/badge/Proyecto%20de%20grado-Sistema%20institucional-0EA5E9?style=for-the-badge" alt="Proyecto de grado" />
   <img src="https://img.shields.io/badge/Stack-Next.js%20%2B%20Supabase-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js + Supabase" />
