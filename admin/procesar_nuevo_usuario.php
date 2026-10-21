@@ -58,7 +58,8 @@ if (!$role) {
 
 $hash = password_hash($password, PASSWORD_DEFAULT);
 $insert = $pdo->prepare(
-    'INSERT INTO usuarios (nombre, apellido, email, password, id_rol, estado) VALUES (:nombre, :apellido, :email, :password, :id_rol, :estado)'
+    'INSERT INTO usuarios (nombre, apellido, email, password, id_rol, estado, cargo, area, cc, avatar)
+     VALUES (:nombre, :apellido, :email, :password, :id_rol, :estado, :cargo, :area, :cc, :avatar)'
 );
 $insert->execute([
     ':nombre' => $nombre,
@@ -67,6 +68,10 @@ $insert->execute([
     ':password' => $hash,
     ':id_rol' => (int) $role['id_rol'],
     ':estado' => $estado,
+    ':cargo' => null,
+    ':area' => null,
+    ':cc' => null,
+    ':avatar' => 'img/default-avatar.svg',
 ]);
 
 $idNuevoUsuario = (int) $pdo->lastInsertId();

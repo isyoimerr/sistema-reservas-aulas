@@ -215,6 +215,17 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="prototype-note" aria-label="Aviso de prototipo académico">
+          <span className="eyebrow">Aviso importante</span>
+          <h3>Prototipo académico — no oficial</h3>
+          <p>
+            Este proyecto fue desarrollado como prototipo de investigación y práctica académica para fines educativos,
+            demostrativos y de evaluación estudiantil. No representa ni sustituye la identidad oficial, institucional
+            ni administrativa de la institución. Se utilizan logotipos, imágenes y referencias visuales con fines
+            pedagógicos y de presentación del trabajo académico.
+          </p>
+        </section>
+
         <section id="contacto" className="cta-section">
           <div className="cta-panel">
             <p>¿Listo para llevar la gestión de aulas al siguiente nivel?</p>
@@ -272,7 +283,7 @@ export default function HomePage() {
         <div className="footer-bottom">
           <div className="container footer-bottom-inner">
             <span>© 2026 Sistema de Reservas</span>
-            <span>Todos los derechos reservados</span>
+            <span>Prototipo académico · uso educativo y demostrativo · no oficial</span>
           </div>
         </div>
       </footer>

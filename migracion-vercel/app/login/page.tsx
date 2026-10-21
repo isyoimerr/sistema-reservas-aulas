@@ -79,6 +79,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("admin@sistema.com");
   const [password, setPassword] = useState("admin123");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const supabaseStatus = getSupabaseStatus();
 
@@ -149,69 +150,98 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="auth-shell">
-      <section className="auth-panel">
-        <div className="auth-copy">
-          <p className="eyebrow">Acceso institucional</p>
-          <h1>Reservas académicas</h1>
-          <p>
-            Sistema de gestión de aulas y reservas para docentes y personal administrativo.
-          </p>
-        </div>
+    <main className="auth-shell login-shell">
+      <div className="login-layout">
+        <aside className="login-visual" aria-label="Portada institucional">
+          <div className="login-visual-inner">
+            <div className="login-brand-mark" aria-hidden="true">
+              ✦
+            </div>
 
-        {!supabaseStatus.enabled ? (
-          <div className="demo-banner" role="status" aria-live="polite">
-            {supabaseStatus.message}
-          </div>
-        ) : null}
+            <h1>
+              Hola
+            </h1>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <h2>Iniciar sesión</h2>
-          <label>
-            Correo institucional
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="correo@institucion.edu"
-            />
-          </label>
-
-          <label>
-            Contraseña
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
-            />
-          </label>
-
-          {error ? <p className="form-error">{error}</p> : null}
-
-          <button type="submit">Entrar</button>
-
-          <div className="auth-links">
-            <Link
-              href="#"
-              className="text-link"
-              onClick={(event) => {
-                event.preventDefault();
-                setError("Recuperación de contraseña no habilitada en este momento. Habla con el administrador.");
-              }}
-            >
-              ¿Olvidaste tu contraseña?
-            </Link>
-            <Link href="/registro" className="text-link">
-              ¿No tienes una cuenta? Regístrate
-            </Link>
+            <p>
+              Ingresa como profesor o administrador.
+            </p>
           </div>
 
-          <Link href="/" className="text-link">
-            Volver al inicio
-          </Link>
-        </form>
-      </section>
+          <div className="login-credits">© 2026 Reservas. Todos los derechos reservados.</div>
+        </aside>
+
+        <section className="login-panel">
+          <div className="login-card">
+            <div className="login-header">
+              <h2>Iniciar sesión</h2>
+            </div>
+
+            {!supabaseStatus.enabled ? (
+              <div className="demo-banner" role="status" aria-live="polite">
+                {supabaseStatus.message}
+              </div>
+            ) : null}
+
+            <form className="auth-form login-form" onSubmit={handleSubmit}>
+              <label>
+                Correo institucional
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="admin@sistema.com"
+                />
+              </label>
+
+              <label>
+                Contraseña
+                <div className="password-field">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? "◉" : "◌"}
+                  </button>
+                </div>
+              </label>
+
+              {error ? <p className="form-error">{error}</p> : null}
+
+              <button type="submit" className="primary-login-button">
+                Entrar
+              </button>
+
+              <div className="auth-links">
+                <Link
+                  href="#"
+                  className="text-link"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setError("Recuperación de contraseña no habilitada en este momento. Habla con el administrador.");
+                  }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+                <Link href="/registro" className="text-link">
+                  ¿No tienes una cuenta? Regístrate
+                </Link>
+              </div>
+
+              <Link href="/" className="text-link back-link">
+                Volver al inicio
+              </Link>
+            </form>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

@@ -18,6 +18,10 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     id_rol INT NOT NULL,
     estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
+    cargo VARCHAR(100) NULL,
+    area VARCHAR(100) NULL,
+    cc VARCHAR(50) NULL,
+    avatar VARCHAR(255) NULL DEFAULT 'img/default-avatar.svg',
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;

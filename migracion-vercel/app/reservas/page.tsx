@@ -5,7 +5,7 @@ import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getSupabaseStatus, supabase } from "@/lib/supabase";
-import { appendAuditEntry, validateAcademicReservation } from "@/lib/academic-rules";
+import { appendAuditEntry, overlaps, validateAcademicReservation } from "@/lib/academic-rules";
 
 type ReservaRecord = {
   id_reserva: number;
@@ -39,7 +39,7 @@ const emptyForm: FormState = {
   hora_inicio: "09:00",
   hora_fin: "11:00",
   motivo: "",
-  estado: "Pendiente",
+  estado: "Aprobada",
 };
 
 const menuItems = [
@@ -97,6 +97,30 @@ export default function ReservasPage() {
   const currentUserName = currentUser
     ? `${currentUser.nombre ?? ""} ${currentUser.apellido ?? ""}`.trim()
     : (typeof window !== "undefined" ? localStorage.getItem("session-name") : null) || "Profesor";
+
+  const availabilitySummary = useMemo(() => {
+    if (!form.fecha || !form.hora_inicio || !form.hora_fin) {
+      return aulas.map((aula) => ({
+        id_aula: Number(aula.id_aula),
+        nombre_aula: aula.nombre_aula,
+        disponible: true,
+      }));
+    }
+
+    return aulas.map((aula) => {
+      const conflict = reservas.some((reserva) => {
+        return Number(reserva.id_aula) === Number(aula.id_aula)
+          && reserva.fecha_reserva === form.fecha
+          && overlaps(form.hora_inicio, form.hora_fin, reserva.hora_inicio, reserva.hora_fin);
+      });
+
+      return {
+        id_aula: Number(aula.id_aula),
+        nombre_aula: aula.nombre_aula,
+        disponible: !conflict,
+      };
+    });
+  }, [aulas, reservas, form.fecha, form.hora_inicio, form.hora_fin]);
 
   const professorUsuarios = useMemo(() => {
     return usuarios.filter((usuario) => {
@@ -251,7 +275,7 @@ export default function ReservasPage() {
   const persistReservationLocally = (payload: Record<string, any>, isEditing: boolean) => {
     const existingReservas = JSON.parse(localStorage.getItem("demo-reservas") ?? "[]") as ReservaRecord[];
     const selectedUser = usuarios.find((usuario) => Number(usuario.id_usuario) === Number(payload.id_usuario)) ?? currentUser ?? null;
-    const finalState = isAdmin ? form.estado : "Pendiente";
+    const finalState = "Aprobada";
 
     const updated: ReservaRecord[] = isEditing
       ? existingReservas.map((item) =>
@@ -288,7 +312,7 @@ export default function ReservasPage() {
     const connectionStatus = getSupabaseStatus();
     const resolvedUserId = isAdmin ? Number(form.id_usuario) : Number(currentUserId || form.id_usuario || 0);
 
-    const finalEstado = isAdmin ? form.estado : "Pendiente";
+    const finalEstado = "Aprobada";
 
     const payload = {
       id_usuario: resolvedUserId,
@@ -501,16 +525,7 @@ export default function ReservasPage() {
 
               <label>
                 Estado
-                {isAdmin ? (
-                  <select value={form.estado} onChange={(event) => handleChange("estado", event.target.value)}>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Aprobada">Aprobada</option>
-                    <option value="Rechazada">Rechazada</option>
-                    <option value="Cancelada">Cancelada</option>
-                  </select>
-                ) : (
-                  <input value={form.estado || "Pendiente"} readOnly />
-                )}
+                <input value={form.estado || "Aprobada"} readOnly />
               </label>
 
               <label className="full-width">
@@ -521,6 +536,21 @@ export default function ReservasPage() {
                   placeholder="Ej: Clase de laboratorio, reunión académica, etc."
                 />
               </label>
+            </div>
+
+            <div className="availability-panel">
+              <div className="availability-header">
+                <h4>Disponibilidad</h4>
+                <span>{form.fecha ? "Horario activo" : "Selecciona fecha"}</span>
+              </div>
+              <div className="availability-list">
+                {availabilitySummary.map((item) => (
+                  <div key={item.id_aula} className={`availability-item ${item.disponible ? "available" : "busy"}`}>
+                    <span>{item.nombre_aula}</span>
+                    <strong>{item.disponible ? "Disponible" : "Ocupada"}</strong>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {message ? <p className="form-feedback">{message}</p> : null}

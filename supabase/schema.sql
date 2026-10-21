@@ -21,9 +21,16 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     id_rol INT NOT NULL,
     estado usuario_estado DEFAULT 'Activo',
+    cargo VARCHAR(100),
+    area VARCHAR(100),
+    cc VARCHAR(50),
+    avatar VARCHAR(255) DEFAULT 'img/default-avatar.svg',
     fecha_creacion TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles(id_rol) ON UPDATE CASCADE,
-    CONSTRAINT chk_usuarios_rol CHECK (id_rol IN (1, 2))
+    CONSTRAINT chk_usuarios_rol CHECK (id_rol IN (1, 2)),
+    CONSTRAINT chk_usuarios_email CHECK (length(trim(email)) > 0),
+    CONSTRAINT chk_usuarios_nombre CHECK (length(trim(nombre)) > 0),
+    CONSTRAINT chk_usuarios_apellido CHECK (length(trim(apellido)) > 0)
 );
 
 CREATE TABLE aulas (
@@ -191,6 +198,7 @@ CREATE POLICY "bitacora_insert_own_or_admin" ON bitacora_actividad FOR INSERT WI
     OR user_has_role('Superadministrador')
 );
 
+CREATE UNIQUE INDEX idx_usuarios_email_lower_unique ON usuarios (LOWER(email));
 CREATE INDEX idx_usuarios_email ON usuarios(email);
 CREATE INDEX idx_usuarios_rol ON usuarios(id_rol);
 CREATE INDEX idx_aulas_estado ON aulas(estado);
