@@ -26,10 +26,15 @@ const isDashboardUrl = (value: string | undefined) => {
 const normalizeSupabaseUrl = (value: string | undefined) => {
   if (typeof value !== "string") return "";
 
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
   const dashboardMatch = trimmed.match(/^https:\/\/supabase\.com\/dashboard\/project\/([a-z0-9-]+)(?:\/.*)?$/i);
   if (dashboardMatch) {
     return `https://${dashboardMatch[1]}.supabase.co`;
+  }
+
+  const projectUrlMatch = trimmed.match(/^https:\/\/([a-z0-9-]+)\.supabase\.co(?:\/.*)?$/i);
+  if (projectUrlMatch) {
+    return `https://${projectUrlMatch[1]}.supabase.co`;
   }
 
   const bareProjectRef = trimmed.match(/^([a-z0-9-]{8,64})$/i);
@@ -50,7 +55,7 @@ const isValidSupabaseUrl = (value: string | undefined) => {
   if (typeof value !== "string") return false;
 
   const normalized = normalizeSupabaseUrl(value);
-  return /^https:\/\/[a-z0-9-]+\.supabase\.co(\/)?$/i.test(normalized.trim());
+  return /^https:\/\/[a-z0-9-]+\.supabase\.co(?:\/rest\/v1)?\/?$/i.test(normalized.trim());
 };
 
 export const supabase =
