@@ -1,5 +1,6 @@
 "use client";
 
+import ActionMenu from "@/components/action-menu";
 import RoleSidebar from "@/components/role-sidebar";
 import { isAdminSession, isProfessorSession } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -139,24 +140,10 @@ export default function ReservasPage() {
     const currentRole = localStorage.getItem("session-role") ?? "Profesor";
 
     if (!supabase) {
-      const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 1, nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com" },
-        { id_usuario: 2, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const finalAulas = savedAulas?.length ? savedAulas : [
-        { id_aula: 1, codigo_aula: "A-101", nombre_aula: "Aula 101" },
-        { id_aula: 2, codigo_aula: "LAB-2", nombre_aula: "Laboratorio 2" },
-      ];
-      const finalReservas = (savedReservas?.length ? savedReservas : fallbackLocalData).filter((reserva) => {
-        if (currentRole === "Superadministrador") return true;
-        return Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada";
-      });
-      localStorage.setItem("cache-usuarios", JSON.stringify(finalUsuarios));
-      localStorage.setItem("cache-aulas", JSON.stringify(finalAulas));
-      localStorage.setItem("cache-reservas", JSON.stringify(finalReservas));
-      setReservas(finalReservas);
-      setUsuarios(finalUsuarios);
-      setAulas(finalAulas);
+      setReservas([]);
+      setUsuarios([]);
+      setAulas([]);
+      setMessage("Supabase no está configurado. No se pueden listar reservas reales sin la conexión al proyecto.");
       return;
     }
 
@@ -176,15 +163,9 @@ export default function ReservasPage() {
         throw usuariosResult.error ?? aulasResult.error ?? reservasResult.error ?? new Error("Sin datos disponibles");
       }
 
-      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [
-        { id_usuario: 1, nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com" },
-        { id_usuario: 2, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [
-        { id_aula: 1, codigo_aula: "A-101", nombre_aula: "Aula 101" },
-        { id_aula: 2, codigo_aula: "LAB-2", nombre_aula: "Laboratorio 2" },
-      ];
-      const nextReservas = (reservasResult.data as ReservaRecord[] | null)?.length ? (reservasResult.data as ReservaRecord[]) : fallbackLocalData;
+      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [];
+      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [];
+      const nextReservas = (reservasResult.data as ReservaRecord[] | null)?.length ? (reservasResult.data as ReservaRecord[]) : [];
       const visibleReservas = currentRole === "Superadministrador"
         ? nextReservas
         : nextReservas.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada");
@@ -196,24 +177,10 @@ export default function ReservasPage() {
       setUsuarios(nextUsuarios);
       setAulas(nextAulas);
     } catch (error) {
-      const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 1, nombre: "Admin", apellido: "Sistema", email: "admin@sistema.com" },
-        { id_usuario: 2, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const fallbackAulasData = savedAulas?.length ? savedAulas : [
-        { id_aula: 1, codigo_aula: "A-101", nombre_aula: "Aula 101" },
-        { id_aula: 2, codigo_aula: "LAB-2", nombre_aula: "Laboratorio 2" },
-      ];
-      const fallbackData = savedReservas?.length ? savedReservas : fallbackLocalData;
-      const visibleFallback = currentRole === "Superadministrador"
-        ? fallbackData
-        : fallbackData.filter((reserva) => Number(reserva.id_usuario) === Number(currentUserIdFromStorage) || reserva.estado === "Aprobada");
-      localStorage.setItem("cache-usuarios", JSON.stringify(fallbackUsuariosData));
-      localStorage.setItem("cache-aulas", JSON.stringify(fallbackAulasData));
-      localStorage.setItem("cache-reservas", JSON.stringify(visibleFallback));
-      setReservas(visibleFallback);
-      setUsuarios(fallbackUsuariosData);
-      setAulas(fallbackAulasData);
+      setReservas([]);
+      setUsuarios([]);
+      setAulas([]);
+      setMessage("No se pudo cargar la información de reservas desde Supabase. Verifica la conexión y permisos del proyecto.");
       console.warn("Fallo en Supabase para reservas.", error);
     }
   };
@@ -549,9 +516,11 @@ export default function ReservasPage() {
                           </span>
                         </td>
                         <td>
-                          <button className="ghost-button" type="button" onClick={() => handleEdit(reserva)}>
-                            Editar
-                          </button>
+                          <ActionMenu
+                            items={[
+                              { label: "Editar", onClick: () => handleEdit(reserva) },
+                            ]}
+                          />
                         </td>
                       </tr>
                     ))

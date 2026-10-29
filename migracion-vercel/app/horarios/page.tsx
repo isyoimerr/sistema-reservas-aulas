@@ -1,5 +1,6 @@
 "use client";
 
+import ActionMenu from "@/components/action-menu";
 import RoleSidebar from "@/components/role-sidebar";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -147,26 +148,11 @@ export default function HorariosPage() {
     const currentUserIdFromStorage = Number(localStorage.getItem("session-user-id") ?? 0);
 
     if (!supabase) {
-      const finalUsuarios = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
-        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const finalAulas = savedAulas?.length ? savedAulas : [
-        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
-        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
-        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
-      ];
-      const finalHorarios = (savedHorarios?.length ? savedHorarios : fallbackHorarios).filter((horario) => {
-        if (currentRole === "Superadministrador") return true;
-        return Number(horario.id_usuario) === Number(currentUserIdFromStorage);
-      });
-      localStorage.setItem("cache-usuarios", JSON.stringify(finalUsuarios));
-      localStorage.setItem("cache-aulas", JSON.stringify(finalAulas));
-      localStorage.setItem("cache-horarios", JSON.stringify(finalHorarios));
-      setUsuarios(finalUsuarios);
-      setAulas(finalAulas);
-      setHorarios(finalHorarios);
+      setUsuarios([]);
+      setAulas([]);
+      setHorarios([]);
       setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
+      setMessage("Supabase no está configurado. Debes conectar con tu proyecto real para gestionar horarios docentes.");
       return;
     }
 
@@ -185,16 +171,9 @@ export default function HorariosPage() {
         throw usuariosResult.error ?? aulasResult.error ?? horariosResult.error ?? new Error("Sin datos disponibles");
       }
 
-      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
-        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [
-        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
-        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
-        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
-      ];
-      const nextHorarios = (horariosResult.data as HorarioRecord[] | null)?.length ? (horariosResult.data as HorarioRecord[]) : fallbackHorarios;
+      const nextUsuarios = (usuariosResult.data as Array<Record<string, any>> | null)?.length ? (usuariosResult.data as Array<Record<string, any>>) : [];
+      const nextAulas = (aulasResult.data as Array<Record<string, any>> | null)?.length ? (aulasResult.data as Array<Record<string, any>>) : [];
+      const nextHorarios = (horariosResult.data as HorarioRecord[] | null)?.length ? (horariosResult.data as HorarioRecord[]) : [];
       const visibleHorarios = currentRole === "Superadministrador"
         ? nextHorarios
         : nextHorarios.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
@@ -207,26 +186,11 @@ export default function HorariosPage() {
       setHorarios(visibleHorarios);
       setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
     } catch (error) {
-      const fallbackUsuariosData = savedUsuarios?.length ? savedUsuarios : [
-        { id_usuario: 2, nombre: "Profesor", apellido: "Asignado", email: "profesor@sistema.com" },
-        { id_usuario: 3, nombre: "Ana", apellido: "Gómez", email: "ana.gomez@institucion.edu" },
-      ];
-      const fallbackAulasData = savedAulas?.length ? savedAulas : [
-        { id_aula: 1, nombre_aula: "Aula 101", codigo_aula: "A-101" },
-        { id_aula: 2, nombre_aula: "Laboratorio 2", codigo_aula: "LAB-2" },
-        { id_aula: 3, nombre_aula: "Salón de grados", codigo_aula: "SAL-3" },
-      ];
-      const fallbackData = savedHorarios?.length ? savedHorarios : fallbackHorarios;
-      const visibleFallback = currentRole === "Superadministrador"
-        ? fallbackData
-        : fallbackData.filter((horario) => Number(horario.id_usuario) === Number(currentUserIdFromStorage));
-      localStorage.setItem("cache-usuarios", JSON.stringify(fallbackUsuariosData));
-      localStorage.setItem("cache-aulas", JSON.stringify(fallbackAulasData));
-      localStorage.setItem("cache-horarios", JSON.stringify(visibleFallback));
-      setUsuarios(fallbackUsuariosData);
-      setAulas(fallbackAulasData);
-      setHorarios(visibleFallback);
+      setUsuarios([]);
+      setAulas([]);
+      setHorarios([]);
       setSelectedProfessorId(currentRole === "Superadministrador" ? "" : String(currentUserIdFromStorage || ""));
+      setMessage("No se pudo cargar la información de horarios desde Supabase. Revisa la conexión y los permisos del proyecto.");
       console.warn("Fallo en Supabase para horarios.", error);
     }
   };
@@ -781,10 +745,12 @@ export default function HorariosPage() {
                       <td>{horario.dia_semana}</td>
                       <td>{horario.hora_inicio} - {horario.hora_fin}</td>
                       <td>
-                        <div className="inline-actions">
-                          <button type="button" className="ghost-button" onClick={() => handleEdit(horario)}>Editar</button>
-                          <button type="button" className="ghost-button danger" onClick={() => handleDelete(horario.id_horario)}>Eliminar</button>
-                        </div>
+                        <ActionMenu
+                          items={[
+                            { label: "Editar", onClick: () => handleEdit(horario) },
+                            { label: "Eliminar", variant: "danger", onClick: () => handleDelete(horario.id_horario) },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}
